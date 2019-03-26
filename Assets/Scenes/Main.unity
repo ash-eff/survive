@@ -226,18 +226,16 @@ MonoBehaviour:
   zone: {fileID: 4854794332899589585, guid: b20c6628983045745962505330fdb97a, type: 3}
   startingPoint: {fileID: 8466037659204805638, guid: 055a3d2492878944b8f7b671b6b70a2b,
     type: 3}
-  maxPoints: 8
+  maxPoints: 12
+  maxMapSizeX: 100
+  maxMapSizeY: 100
+  scale: 15
+  xOffset: 0
+  yOffset: 0
   minXPointRange: 0
   maxXPointRange: 0
   minYPointRange: 0
   maxYPointRange: 0
-  maxX: 50
-  maxY: 50
-  xOffset: 0
-  yOffset: 0
-  scale: 15
-  startingPos: []
-  points: []
 --- !u!4 &961725778
 Transform:
   m_ObjectHideFlags: 0
@@ -281,6 +279,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f36f49fed1476bc46a328a23efc847cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  sky: 0
+  weather: 0
+  timeOfDay: 
+  day: 1
+  dayTime: 0
+  islandTemperature: 0
+  hourScale: 0.2
 --- !u!4 &1495514706
 Transform:
   m_ObjectHideFlags: 0

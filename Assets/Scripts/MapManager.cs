@@ -6,34 +6,35 @@ public class MapManager : MonoBehaviour
 {
     public Zone zone;
     public GameObject startingPoint;
-    public int maxPoints;
-    public int minXPointRange;
+
+    public int maxPoints; // number of points. helps spread the island out more randomly
+    public int maxMapSizeX;
+    public int maxMapSizeY;
+    public int scale;
+
+    public int xOffset; // adds more randomness to the perlin noise
+    public int yOffset;
+    public int minXPointRange; // how far from center each point can reach
     public int maxXPointRange;
     public int minYPointRange;
     public int maxYPointRange;
-    public int maxX;
-    public int maxY;
-    public int xOffset;
-    public int yOffset;
-    public int scale;
 
-    private List<Vector2> gridPos = new List<Vector2>();
-    private Dictionary<Zone, Vector2> zones = new Dictionary<Zone, Vector2>();
-    public List<Zone> startingPos = new List<Zone>();
-    public List<Vector2> points = new List<Vector2>();
     private float width;
     private float height;
-    private float maxDistance;
+
+    private Dictionary<Zone, Vector2> zones = new Dictionary<Zone, Vector2>();
+    private List<Vector2> gridPos = new List<Vector2>();
+    private List<Zone> startingPos = new List<Zone>();
+    private List<Vector2> points = new List<Vector2>();
 
     void Awake()
     {
-        minXPointRange = maxX / 4;
-        maxXPointRange = maxX / 4;
-        minYPointRange = maxY / 4;
-        maxYPointRange = maxY / 4;
+        minXPointRange = maxMapSizeX / 4;
+        maxXPointRange = maxMapSizeX / 4;
+        minYPointRange = maxMapSizeY / 4;
+        maxYPointRange = maxMapSizeY / 4;
         width = zone.transform.localScale.x;
         height = zone.transform.localScale.y;
-        maxDistance = (Vector2.zero - new Vector2(maxX / 2 * width, maxY / 2 *height)).magnitude;
         xOffset = Random.Range(0, 99999);
         yOffset = Random.Range(0, 99999);
         BuildGrid();
@@ -41,12 +42,12 @@ public class MapManager : MonoBehaviour
 
     private void BuildGrid()
     {
-        for(int i = 0; i < maxX; i++)
+        for(int i = 0; i < maxMapSizeX; i++)
         {
-            for(int j = 0; j < maxY; j++)
+            for(int j = 0; j < maxMapSizeY; j++)
             {
-                float xPos = (i - maxX / 2) * width;
-                float yPos = (j - maxY / 2) * height;
+                float xPos = (i - maxMapSizeX / 2) * width;
+                float yPos = (j - maxMapSizeY / 2) * height;
                 gridPos.Add(new Vector2(xPos, yPos));
             }
         }
@@ -59,7 +60,7 @@ public class MapManager : MonoBehaviour
         foreach(Vector2 pos in gridPos)
         {
             Zone zoneObj = Instantiate(zone, pos, Quaternion.identity);
-            zoneObj.zonePosition = pos;    
+            zoneObj.ZonePosition = pos;    
             zones.Add(zoneObj, pos);
         }
 
@@ -97,7 +98,7 @@ public class MapManager : MonoBehaviour
         
         foreach(KeyValuePair<Zone, Vector2> z in zones)
         {
-            z.Key.SetGradientValue();
+            z.Key.CalculateGradientValue();
         }
 
         CreateMap();
@@ -108,42 +109,16 @@ public class MapManager : MonoBehaviour
         foreach(KeyValuePair<Zone, Vector2> z in zones)
         {
             float perlin = Mathf.PerlinNoise(z.Value.x / scale + xOffset, z.Value.y / scale + yOffset);
-            z.Key.AssignPerlinValue(perlin);
+            z.Key.CalculatePerlinValue(perlin);
             z.Key.ActivateSprite();
-            if (z.Key.roundedPerlin > .09f && z.Key.roundedPerlin < .15f)
+            if (z.Key.RoundedPerlin > .09f && z.Key.RoundedPerlin < .15f)
             {
                 startingPos.Add(z.Key);
             }
         }
 
         int startingIndex = Random.Range(0, startingPos.Count);
-        Instantiate(startingPoint, startingPos[startingIndex].zonePosition, Quaternion.identity);
-        startingPos[startingIndex].startingPosition = true;
-
-        //for (float i = 0; i < maxX; i++)
-        //{
-        //    for (float j = 0; j < maxY; j++)
-        //    {
-        //        float xPos = (i - maxX / 2) * width;
-        //        float yPos = (j - maxY / 2) * height;
-        //        float distance = (Vector2.zero - new Vector2(xPos, yPos)).magnitude;
-        //        distance = Mathf.Clamp(distance, 0, 1);
-        //        float perlin = Mathf.PerlinNoise(i / scale, j / scale);
-        //
-        //        Zone zoneObj = Instantiate(zone, new Vector3(xPos, yPos, 0), Quaternion.identity);
-        //        zoneObj.perlinFloat = perlin;
-        //        zoneObj.distanceToCenter = distance;
-        //        //SpriteRenderer spr = zoneObj.GetComponent<SpriteRenderer>();
-        //        //
-        //        //if(perlin <= 0.3f)
-        //        //{
-        //        //    spr.color = new Color(0, 0, perlin);
-        //        //}
-        //        //else
-        //        //{
-        //        //    spr.color = new Color(0, perlin, 0);
-        //        //}
-        //    }
-        //}
+        Instantiate(startingPoint, startingPos[startingIndex].ZonePosition, Quaternion.identity);
+        startingPos[startingIndex].StartingPosition = true;
     }
 }
