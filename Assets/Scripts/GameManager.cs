@@ -18,7 +18,8 @@ public class GameManager : MonoBehaviour
     private int minutes;
     public int islandTemperature;
     private int hottestTempOfTheDay = 60;
-    private float chanceOfRain;
+    private int tempOffset;
+    public float chanceOfRain;
     private int conditionMod = 0;
     public float hourScale;
 
@@ -32,7 +33,7 @@ public class GameManager : MonoBehaviour
         islandTemperature = hottestTempOfTheDay;
         sky = Sky.Clear;
         weather = Weather.NoPrecipitation;
-        hour = Random.Range(04, 12);
+        hour = Random.Range(23, 24);
         minutes = Random.Range(00, 60);
         timeOfDay = hour.ToString("00") + ":" + minutes.ToString("00");
         CheckTemperature();
@@ -76,23 +77,23 @@ public class GameManager : MonoBehaviour
 
     void GetNewDayTemperature()
     {
-        int tempOffset;
-        int minus10 = hottestTempOfTheDay - 10;
-        int plus10 = hottestTempOfTheDay + 11;
-        tempOffset = Random.Range(minus10, plus10);
+        Debug.Log("Getting Daily Temp");
+        tempOffset = Random.Range(-10, 11);
 
-        if(tempOffset > 99)
+        if(hottestTempOfTheDay + tempOffset > 99)
         {
-            tempOffset = 80;
+            hottestTempOfTheDay = 80;
         }
-        else if(tempOffset < 25)
+        else if(hottestTempOfTheDay + tempOffset < 25)
         {
-            tempOffset = 40;
+            hottestTempOfTheDay = 40;
         }
-
-        hottestTempOfTheDay = tempOffset;
+        else
+        {
+            hottestTempOfTheDay += tempOffset;
+        }
+        
         CheckChanceOfRain();
-        CheckTemperature();
     }
 
     void CheckTemperature()

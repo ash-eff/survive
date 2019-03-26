@@ -285,7 +285,8 @@ MonoBehaviour:
   day: 1
   dayTime: 0
   islandTemperature: 0
-  hourScale: 0.2
+  chanceOfRain: 0
+  hourScale: 0.1
 --- !u!4 &1495514706
 Transform:
   m_ObjectHideFlags: 0
