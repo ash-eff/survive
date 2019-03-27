@@ -1,9 +1,17 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
+    public GameObject player;
+    public Zone playerInZone;
+
+    public bool gameStarted;
+    public bool levelLoaded;
+
     public enum Sky { Cloudy, Clear, Sunny }
     public Sky sky;
 
@@ -23,6 +31,42 @@ public class GameManager : MonoBehaviour
     private int conditionMod = 0;
     public float hourScale;
 
+    #region intro screen
+    public GameObject startScreen;
+    public GameObject blackScreen;
+    public TextMeshProUGUI startingText;
+    public Color inColor;
+    public Color outColor;
+    public Color outColor2;
+    public float lerpTime;
+    #endregion
+
+    #region World Info UI
+    public GameObject worldOverlay;
+    public TextMeshProUGUI timeText;
+    public TextMeshProUGUI skyText;
+    public TextMeshProUGUI weatherText;
+    public TextMeshProUGUI temperatureText;
+    #endregion
+
+    #region Zone Info UI
+    public TextMeshProUGUI plantsText;
+    public TextMeshProUGUI seedsText;
+    public TextMeshProUGUI meatText;
+    public TextMeshProUGUI furText;
+    public TextMeshProUGUI medicineText;
+    public TextMeshProUGUI clothText;
+    public TextMeshProUGUI plasticText;
+    public TextMeshProUGUI metalText;
+    public TextMeshProUGUI woodText;
+    public TextMeshProUGUI rockText;
+    #endregion
+
+
+    CameraController cam;
+
+    float currentLerpTime;
+
     public int IslandTemperature
     {
         get { return islandTemperature; }
@@ -30,6 +74,8 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
+        cam = FindObjectOfType<CameraController>();
+        StartCoroutine(TextFadeIn());
         islandTemperature = hottestTempOfTheDay;
         sky = Sky.Clear;
         weather = Weather.NoPrecipitation;
@@ -37,12 +83,18 @@ public class GameManager : MonoBehaviour
         minutes = Random.Range(00, 60);
         timeOfDay = hour.ToString("00") + ":" + minutes.ToString("00");
         CheckTemperature();
-        StartCoroutine(RunClock());
     }
 
     private void Update()
     {
-        if(hour >= 20 || hour >= 00 && hour < 06)
+        UpdateWorldInfo();
+
+        if (playerInZone != null)
+        {
+            LoadZoneInfo();
+        }
+
+        if (hour >= 20 || hour >= 00 && hour < 06)
         {
             dayTime = false;
         }
@@ -77,7 +129,6 @@ public class GameManager : MonoBehaviour
 
     void GetNewDayTemperature()
     {
-        Debug.Log("Getting Daily Temp");
         tempOffset = Random.Range(-10, 11);
 
         if(hottestTempOfTheDay + tempOffset > 99)
@@ -227,5 +278,96 @@ public class GameManager : MonoBehaviour
     int RandomNumber(int x, int y)
     {
         return Random.Range(x, y + 1);
+    }
+
+    public void InstantiatePlayer(Zone _zone)
+    {
+        GameObject playerGo = Instantiate(player, _zone.ZonePosition, Quaternion.identity);
+        playerGo.GetComponent<Player>().currentPosition = _zone.ZonePosition;
+        playerInZone = _zone;
+        levelLoaded = true;
+    }
+
+    IEnumerator TextFadeIn()
+    {
+        currentLerpTime = 0;
+        while (startingText.color.a < .9f)
+        {
+            currentLerpTime += Time.deltaTime;
+
+            float perc = currentLerpTime / lerpTime;
+            startingText.color = Color.Lerp(startingText.color, inColor, perc);
+            yield return null;
+        }
+
+        while(!levelLoaded)
+        {
+            yield return null;
+        }
+
+        StartCoroutine(TextFadeOut());
+    }
+
+    IEnumerator TextFadeOut()
+    {
+        currentLerpTime = 0;
+        while (startingText.color.a > .01f)
+        {
+            currentLerpTime += Time.deltaTime;
+
+            float perc = currentLerpTime / lerpTime;
+            startingText.color = Color.Lerp(startingText.color, outColor, perc);
+            yield return null;
+        }
+
+        StartCoroutine(FadeOutBlackScreen());
+        cam.PlayerLoaded();
+    }
+
+    IEnumerator FadeOutBlackScreen()
+    {
+        currentLerpTime = 0;
+        Image blackScreenSpr = blackScreen.GetComponent<Image>();
+        while (blackScreenSpr.color.a > .01f)
+        {
+            currentLerpTime += Time.deltaTime;
+
+            float perc = currentLerpTime / lerpTime;
+            blackScreenSpr.color = Color.Lerp(blackScreenSpr.color, outColor2, perc);
+            yield return null;
+        }
+
+        startScreen.SetActive(false);
+
+        while (!cam.ready)
+        {
+            yield return null;
+        }
+
+        gameStarted = true;
+        worldOverlay.SetActive(true);
+        StartCoroutine(RunClock());
+    }
+
+    void LoadZoneInfo()
+    {
+        plantsText.text = "Plants: " + playerInZone.Plants.ToString();
+        seedsText.text = "Seeds: " + playerInZone.Seeds.ToString();
+        meatText.text = "Meat: " + playerInZone.Meat.ToString();
+        furText.text = "Fur: " + playerInZone.Fur.ToString();
+        medicineText.text = "Meds: " + playerInZone.Medicinal.ToString();
+        clothText.text = "Cloth: " + playerInZone.Cloth.ToString();
+        plasticText.text = "Plastic: " + playerInZone.Plastic.ToString();
+        metalText.text = "Metal: " + playerInZone.Metal.ToString();
+        woodText.text = "Wood: " + playerInZone.Wood.ToString();
+        rockText.text = "Rocks: " + playerInZone.Rocks.ToString();
+    }
+
+    void UpdateWorldInfo()
+    {
+        timeText.text = "Time: " + timeOfDay;
+        skyText.text = "Conditions: " + sky.ToString();
+        weatherText.text = "Weather: " + weather.ToString();
+        temperatureText.text = "Temperature: " + islandTemperature + "F";
     }
 }

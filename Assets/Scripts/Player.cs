@@ -5,5 +5,6 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
 
+    public Vector2 currentPosition;
 
 }

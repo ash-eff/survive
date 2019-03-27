@@ -27,8 +27,11 @@ public class MapManager : MonoBehaviour
     private List<Zone> startingPos = new List<Zone>();
     private List<Vector2> points = new List<Vector2>();
 
+    GameManager gm;
+
     void Awake()
     {
+        gm = FindObjectOfType<GameManager>();
         minXPointRange = maxMapSizeX / 4;
         maxXPointRange = maxMapSizeX / 4;
         minYPointRange = maxMapSizeY / 4;
@@ -59,9 +62,11 @@ public class MapManager : MonoBehaviour
     {
         foreach(Vector2 pos in gridPos)
         {
+            GameObject zoneParent = GameObject.Find("Zones");
             Zone zoneObj = Instantiate(zone, pos, Quaternion.identity);
-            zoneObj.ZonePosition = pos;    
-            zones.Add(zoneObj, pos);
+            zoneObj.ZonePosition = pos;
+            zoneObj.transform.parent = zoneParent.transform;
+            zones.Add(zoneObj, pos);      
         }
 
         SetPoints();
@@ -118,7 +123,7 @@ public class MapManager : MonoBehaviour
         }
 
         int startingIndex = Random.Range(0, startingPos.Count);
-        Instantiate(startingPoint, startingPos[startingIndex].ZonePosition, Quaternion.identity);
+        gm.InstantiatePlayer(startingPos[startingIndex]);
         startingPos[startingIndex].StartingPosition = true;
     }
 }

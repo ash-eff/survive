@@ -43,7 +43,7 @@ public class Zone : MonoBehaviour
     private bool medicine; // medicinal plants
     private bool fabric; // cloth
     private bool scrap; // plastic and metal
-    private bool wood; // logs and branches
+    private bool lumber; // logs and branches
     private bool water; // water
     private bool fish; // meat
     private bool rock; // rocks
@@ -66,10 +66,8 @@ public class Zone : MonoBehaviour
     private int basePlastic = 1;
     private int metal;
     private int baseMetal = 1;
-    private int logs;
-    private int baseLogs = 5;
-    private int branches;
-    private int baseBranches = 10;
+    private int wood;
+    private int basewood = 5;
     private int rocks;
     private int baseRocks = 10;
     #endregion
@@ -88,7 +86,15 @@ public class Zone : MonoBehaviour
 
     public bool StartingPosition
     {
-        set { startingPosition = value; zoneFeature = ZoneFeature.Wreckage; }
+        set { startingPosition = value; zoneFeature = ZoneFeature.Wreckage;
+            lumber = true;
+            scrap = true;
+            fabric = true;
+            wood += basewood;
+            plastic += basePlastic;
+            metal += baseMetal;
+            cloth += baseCloth;
+        }
     }
 
     public bool MainShelter
@@ -147,14 +153,9 @@ public class Zone : MonoBehaviour
         get { return metal; }
     }
 
-    public int Logs
+    public int Wood
     {
-        get { return logs; }
-    }
-
-    public int Branches
-    {
-        get { return branches; }
+        get { return wood; }
     }
 
     public int Rocks
@@ -164,7 +165,7 @@ public class Zone : MonoBehaviour
 
     #endregion
 
-    private void Awake()
+    private void OnEnable()
     {
         spr = GetComponent<SpriteRenderer>();
         gm = FindObjectOfType<GameManager>();
@@ -351,7 +352,7 @@ public class Zone : MonoBehaviour
             float chance = Random.value;
             flora = true;
             fauna = true;
-            wood = true;
+            lumber = true;
             if (chance > 0.5)
             {
                 terrainSubType = TerrainSubType.Standard;
@@ -359,8 +360,7 @@ public class Zone : MonoBehaviour
                 fur += baseFur;
                 plants += basePlants;
                 seeds += baseSeeds;
-                logs += baseLogs;
-                branches += baseBranches;
+                wood += basewood;
                 zoneEnergy = GetEnergyCost(.5f);
             }
             else
@@ -370,8 +370,7 @@ public class Zone : MonoBehaviour
                 fur += baseFur * increasedMultiplier;
                 plants += Mathf.RoundToInt(basePlants * decreasedMultiplier);
                 seeds += Mathf.RoundToInt(baseSeeds * decreasedMultiplier);
-                logs += baseLogs * increasedMultiplier;
-                branches += baseBranches * increasedMultiplier;
+                wood += basewood * increasedMultiplier;
                 zoneEnergy = GetEnergyCost(1);
             }
 
@@ -389,10 +388,10 @@ public class Zone : MonoBehaviour
             if (featChance > 0.95)
             {
                 zoneFeature = ZoneFeature.Wreckage;
-                wood = true;
+                lumber = true;
                 scrap = true;
                 fabric = true;
-                logs += baseLogs;
+                wood += basewood;
                 plastic += basePlastic;
                 metal += baseMetal;
                 cloth += baseCloth;
