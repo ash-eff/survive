@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.EventSystems;
 
 public class GameManager : MonoBehaviour
 {
-    public GameObject player;
+    public GameObject playerPrefab;
+    public Player player;
     public Zone playerInZone;
     public Zone selectedZone;
 
@@ -34,7 +36,7 @@ public class GameManager : MonoBehaviour
 
     public float baseHourScale;
     public float fastHourScale;
-    private float hourScale;
+    public float hourScale;
 
     CameraController cam;
     Vector3 mousePos;
@@ -73,6 +75,7 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI terrainText;
     public TextMeshProUGUI featureText;
     public TextMeshProUGUI energyText;
+    public TextMeshProUGUI statusText;
     #endregion
 
     #region getters/setters
@@ -123,16 +126,23 @@ public class GameManager : MonoBehaviour
         {
             if (Input.GetMouseButtonDown(0))
             {
-                mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                hit = Physics2D.Raycast(mousePos, Vector3.zero);
-                if (hit.transform.tag == "Zone")
+                // if this isn't a UI element
+                if (!EventSystem.current.IsPointerOverGameObject())
                 {
-                    selectedZone = hit.transform.GetComponent<Zone>();
+                    mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                    hit = Physics2D.Raycast(mousePos, Vector3.zero);
+                    if (hit.transform.tag == "Zone")
+                    {
+                        selectedZone.Selected = false;
+                        selectedZone = hit.transform.GetComponent<Zone>();
+                        selectedZone.Selected = true;
+                    }
                 }
             }
         }
     }
 
+    #region island stat functions
     IEnumerator RunClock()
     {
         while (true)
@@ -141,6 +151,7 @@ public class GameManager : MonoBehaviour
             minutes++;
             if(minutes > 59)
             {
+                player.ReduceEnergy(45);
                 hour++;
                 minutes = 00;
 
@@ -308,15 +319,20 @@ public class GameManager : MonoBehaviour
     {
         return Random.Range(x, y + 1);
     }
+    #endregion
 
     public void InstantiatePlayer(Zone _zone)
     {
-        GameObject playerGo = Instantiate(player, _zone.ZonePosition, Quaternion.identity);
-        playerGo.GetComponent<Player>().currentPosition = _zone.ZonePosition;
+        GameObject playerGo = Instantiate(playerPrefab, _zone.ZonePosition, Quaternion.identity);
+        player = FindObjectOfType<Player>();
+        player.currentPosition = _zone.ZonePosition;
         playerInZone = _zone;
+        selectedZone = _zone;
+        selectedZone.Selected = true;
         levelLoaded = true;
     }
 
+    #region intro functions
     IEnumerator TextFadeIn()
     {
         currentLerpTime = 0;
@@ -377,22 +393,45 @@ public class GameManager : MonoBehaviour
         worldOverlay.SetActive(true);
         StartCoroutine(RunClock());
     }
+    #endregion
 
+    #region GUI functions
     void LoadZoneInfo()
     {
-        plantsText.text = "Plants: " + playerInZone.Plants.ToString();
-        seedsText.text = "Seeds: " + playerInZone.Seeds.ToString();
-        meatText.text = "Meat: " + playerInZone.Meat.ToString();
-        furText.text = "Fur: " + playerInZone.Fur.ToString();
-        medicineText.text = "Meds: " + playerInZone.Medicinal.ToString();
-        clothText.text = "Cloth: " + playerInZone.Cloth.ToString();
-        plasticText.text = "Plastic: " + playerInZone.Plastic.ToString();
-        metalText.text = "Metal: " + playerInZone.Metal.ToString();
-        woodText.text = "Wood: " + playerInZone.Wood.ToString();
-        rockText.text = "Rocks: " + playerInZone.Rocks.ToString();
-        terrainText.text = "Terrain: " + playerInZone.terrainSubType.ToString() + " " + playerInZone.terrainType.ToString();
-        featureText.text = "Feature: " + playerInZone.zoneFeature.ToString();
-        energyText.text = "Energy: " + playerInZone.ZoneEnergy.ToString();
+        if (!selectedZone.Explored)
+        {
+            plantsText.text = "Plants: ??";
+            seedsText.text = "Seeds: ??";
+            meatText.text = "Meat: ??";
+            furText.text = "Fur: ??";
+            medicineText.text = "Meds: ??";
+            clothText.text = "Cloth: ??";
+            plasticText.text = "Plastic: ??";
+            metalText.text = "Metal: ??";
+            woodText.text = "Wood: ??";
+            rockText.text = "Rocks: ??";
+            terrainText.text = "Terrain: " + selectedZone.terrainType.ToString();
+            featureText.text = "Feature: ??";
+            energyText.text = "Energy: " + selectedZone.ZoneEnergy.ToString();
+            statusText.text = "Status: " + selectedZone.status.ToString();
+        }
+        else
+        {
+            plantsText.text = "Plants: " + selectedZone.Plants.ToString();
+            seedsText.text = "Seeds: " + selectedZone.Seeds.ToString();
+            meatText.text = "Meat: " + selectedZone.Meat.ToString();
+            furText.text = "Fur: " + selectedZone.Fur.ToString();
+            medicineText.text = "Meds: " + selectedZone.Medicinal.ToString();
+            clothText.text = "Cloth: " + selectedZone.Cloth.ToString();
+            plasticText.text = "Plastic: " + selectedZone.Plastic.ToString();
+            metalText.text = "Metal: " + selectedZone.Metal.ToString();
+            woodText.text = "Wood: " + selectedZone.Wood.ToString();
+            rockText.text = "Rocks: " + selectedZone.Rocks.ToString();
+            terrainText.text = "Terrain: " + selectedZone.terrainSubType.ToString() + " " + selectedZone.terrainType.ToString();
+            featureText.text = "Feature: " + selectedZone.zoneFeature.ToString();
+            energyText.text = "Energy: " + selectedZone.ZoneEnergy.ToString();
+            statusText.text = "Status: " + selectedZone.status.ToString();
+        }
     }
 
     void UpdateWorldInfo()
@@ -406,4 +445,63 @@ public class GameManager : MonoBehaviour
             temperatureText.text = "Zone Temperature: " + playerInZone.zoneTemperature.ToString() + "F";
         }
     }
+    #endregion
+
+    #region player button presses
+    public void ExploreAreaOnButton()
+    {
+        
+        StartCoroutine(ExploreArea());
+    }
+
+    #endregion
+
+    #region player Coroutines
+    IEnumerator ExploreArea()
+    {
+        // if the zone hasn't been explored yet, and we are in the the selected zone
+        if (!selectedZone.Explored && selectedZone == playerInZone)
+        {
+            bool exploring = true;
+            // time to explore
+            int timeToExplore = 3;
+            // energy cost per hour
+            int energyCostPerHour = 100;
+            // current hour
+            int currentHour = hour;
+            // current minutes
+            int currentMin = minutes;
+            // goal hour
+            int goal = currentHour + timeToExplore;
+            if (goal > 23)
+            {
+                goal -= 23;
+            }
+
+            player.state = Player.State.Exploring;
+            // fast forward time
+            hourScale = fastHourScale;
+
+            while (exploring)
+            {
+                if (hour == goal)
+                {
+                    if (minutes == currentMin)
+                    {
+                        exploring = false;
+                    }
+                }
+
+                yield return null;
+            }
+            // set time to normal
+            hourScale = baseHourScale;
+            // reduce player energy
+            player.ReduceEnergy(energyCostPerHour * timeToExplore);
+            // set zone to explored
+            selectedZone.Explored = true;
+        }
+    }
+
+    #endregion
 }

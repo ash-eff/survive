@@ -13,6 +13,12 @@ public class Zone : MonoBehaviour
     public enum ZoneFeature { None, Bog, Lake, Stream, Wreckage, }
     public ZoneFeature zoneFeature;
 
+    public enum Status { Explored, Unexplored, }
+    public Status status = Status.Unexplored;
+
+    public GameObject outline1;
+    public GameObject outline2;
+
     private SpriteRenderer spr;
 
     private Vector2 zonePosition; // the position of the zone 
@@ -34,6 +40,9 @@ public class Zone : MonoBehaviour
     private bool mainShelter; // is the player's main shelter in this zone?
     private bool tempShelter; // does the player have a temporary shelter here?
     private bool selfPoint; // is this zone one of the points set by the map?
+    private bool selected;
+    private bool rollover;
+    private bool explored;
 
     GameManager gm;
 
@@ -163,6 +172,17 @@ public class Zone : MonoBehaviour
         get { return rocks; }
     }
 
+    public bool Selected
+    {
+        set { selected = value; }
+    }
+
+    public bool Explored
+    {
+        get { return explored; }
+        set { explored = value; }
+    }
+
     #endregion
 
     private void OnEnable()
@@ -174,6 +194,19 @@ public class Zone : MonoBehaviour
     private void Update()
     {
         zoneTemperature = GetZoneTemperature(gm.IslandTemperature);
+
+        if (!gm.GameStarted)
+        {
+            return;
+        }
+
+        if (explored)
+        {
+            status = Status.Explored;
+        }
+
+        outline1.SetActive(rollover);
+        outline2.SetActive(selected);
     }
 
     public void CalculateClosestPoint(Vector2 _point)
@@ -508,6 +541,16 @@ public class Zone : MonoBehaviour
         }
 
         return temp;
+    }
+
+    private void OnMouseOver()
+    {
+        rollover = true;
+    }
+
+    private void OnMouseExit()
+    {
+        rollover = false;
     }
 
     // coroutine to replenish items over time
