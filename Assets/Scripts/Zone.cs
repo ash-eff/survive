@@ -10,7 +10,7 @@ public class Zone : MonoBehaviour
     public enum TerrainSubType { Shallow, Deep, OverGrown, Clear, Standard, Bare, }
     public TerrainSubType terrainSubType;
 
-    public enum ZoneFeature { Nothing, Bog, Lake, Stream, Wreckage, }
+    public enum ZoneFeature { None, Bog, Lake, Stream, Wreckage, }
     public ZoneFeature zoneFeature;
 
     private SpriteRenderer spr;
@@ -26,7 +26,7 @@ public class Zone : MonoBehaviour
 
     public int zoneTemperature;
     private int baseEnergy = 100;
-    private int zoneEnergy;
+    public int zoneEnergy;
     private int increasedMultiplier = 2;
     private float decreasedMultiplier = .5f;
 

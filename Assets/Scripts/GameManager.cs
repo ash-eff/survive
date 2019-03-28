@@ -8,9 +8,7 @@ public class GameManager : MonoBehaviour
 {
     public GameObject player;
     public Zone playerInZone;
-
-    public bool gameStarted;
-    public bool levelLoaded;
+    public Zone selectedZone;
 
     public enum Sky { Cloudy, Clear, Sunny }
     public Sky sky;
@@ -18,18 +16,29 @@ public class GameManager : MonoBehaviour
     public enum Weather { Rain, Snow, NoPrecipitation }
     public Weather weather;
 
-    public string timeOfDay;
-    public int day = 1;
-    public bool dayTime;
-
+    private string timeOfDay;
+    private int day = 1;
     private int hour;
     private int minutes;
-    public int islandTemperature;
+    private int islandTemperature;
     private int hottestTempOfTheDay = 60;
     private int tempOffset;
-    public float chanceOfRain;
     private int conditionMod = 0;
-    public float hourScale;
+
+    private bool gameStarted;
+    private bool levelLoaded;
+    private bool dayTime;
+
+    private float chanceOfRain;
+    private float currentLerpTime;
+
+    public float baseHourScale;
+    public float fastHourScale;
+    private float hourScale;
+
+    CameraController cam;
+    Ray ray;
+    RaycastHit hit;
 
     #region intro screen
     public GameObject startScreen;
@@ -43,6 +52,7 @@ public class GameManager : MonoBehaviour
 
     #region World Info UI
     public GameObject worldOverlay;
+    public TextMeshProUGUI dayText;
     public TextMeshProUGUI timeText;
     public TextMeshProUGUI skyText;
     public TextMeshProUGUI weatherText;
@@ -60,16 +70,20 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI metalText;
     public TextMeshProUGUI woodText;
     public TextMeshProUGUI rockText;
+    public TextMeshProUGUI terrainText;
+    public TextMeshProUGUI featureText;
+    public TextMeshProUGUI energyText;
     #endregion
 
-
-    CameraController cam;
-
-    float currentLerpTime;
 
     public int IslandTemperature
     {
         get { return islandTemperature; }
+    }
+
+    public bool GameStarted
+    {
+        get { return gameStarted; }
     }
 
     private void Awake()
@@ -80,8 +94,9 @@ public class GameManager : MonoBehaviour
         sky = Sky.Clear;
         weather = Weather.NoPrecipitation;
         hour = Random.Range(23, 24);
-        minutes = Random.Range(00, 60);
+        minutes = 00;
         timeOfDay = hour.ToString("00") + ":" + minutes.ToString("00");
+        hourScale = baseHourScale;
         CheckTemperature();
     }
 
@@ -101,6 +116,22 @@ public class GameManager : MonoBehaviour
         else
         {
             dayTime = true;
+        }
+
+        if (gameStarted)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out hit))
+                {
+                    Debug.Log("Hit: " + hit.collider.name);
+                    if(hit.transform.tag == "Zone")
+                    {
+                        selectedZone = hit.transform.GetComponent<Zone>();
+                    }
+                }
+            }
         }
     }
 
@@ -129,21 +160,21 @@ public class GameManager : MonoBehaviour
 
     void GetNewDayTemperature()
     {
-        tempOffset = Random.Range(-10, 11);
+        tempOffset = Random.Range(-18, 15);
 
         if(hottestTempOfTheDay + tempOffset > 99)
         {
             hottestTempOfTheDay = 80;
         }
-        else if(hottestTempOfTheDay + tempOffset < 25)
+        else if(hottestTempOfTheDay + tempOffset < 10)
         {
-            hottestTempOfTheDay = 40;
+            hottestTempOfTheDay = 25;
         }
         else
         {
             hottestTempOfTheDay += tempOffset;
         }
-        
+
         CheckChanceOfRain();
     }
 
@@ -361,13 +392,20 @@ public class GameManager : MonoBehaviour
         metalText.text = "Metal: " + playerInZone.Metal.ToString();
         woodText.text = "Wood: " + playerInZone.Wood.ToString();
         rockText.text = "Rocks: " + playerInZone.Rocks.ToString();
+        terrainText.text = "Terrain: " + playerInZone.terrainSubType.ToString() + " " + playerInZone.terrainType.ToString();
+        featureText.text = "Feature: " + playerInZone.zoneFeature.ToString();
+        energyText.text = "Energy: " + playerInZone.ZoneEnergy.ToString();
     }
 
     void UpdateWorldInfo()
     {
+        dayText.text = "Day: " + day.ToString();
         timeText.text = "Time: " + timeOfDay;
         skyText.text = "Conditions: " + sky.ToString();
         weatherText.text = "Weather: " + weather.ToString();
-        temperatureText.text = "Temperature: " + islandTemperature + "F";
+        if(playerInZone != null)
+        {
+            temperatureText.text = "Zone Temperature: " + playerInZone.zoneTemperature.ToString() + "F";
+        }
     }
 }

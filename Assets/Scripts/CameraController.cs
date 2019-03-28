@@ -26,7 +26,7 @@ public class CameraController : MonoBehaviour
 
     public void Update()
     {
-        if (!gm.gameStarted)
+        if (!gm.GameStarted)
         {
             return;
         }
@@ -80,7 +80,6 @@ public class CameraController : MonoBehaviour
 
     IEnumerator TargetPlayer()
     {
-        Debug.Log("Target Player");
         float step = speed * Time.deltaTime;
         while(transform.position.x != target.transform.position.x && transform.position.y != target.transform.position.y)
         {

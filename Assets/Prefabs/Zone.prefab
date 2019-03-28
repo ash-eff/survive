@@ -11,9 +11,10 @@ GameObject:
   - component: {fileID: 4759617127303598530}
   - component: {fileID: 6191225314271044465}
   - component: {fileID: 4854794332899589585}
+  - component: {fileID: 5254745357413552222}
   m_Layer: 0
   m_Name: Zone
-  m_TagString: Untagged
+  m_TagString: Zone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -92,9 +93,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16e748853a3664e46b649a379596611b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  zonePosition: {x: 0, y: 0}
-  closestPoint: {x: 0, y: 0}
-  distanceToCenter: 0
-  perlinFloat: 0
-  gradientValue: 0
-  finalPerlinValue: 0
+  terrainType: 0
+  terrainSubType: 0
+  zoneFeature: 0
+  zoneTemperature: 0
+  zoneEnergy: 0
+--- !u!61 &5254745357413552222
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8466037659204805638}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1, y: 1}
+    newSize: {x: 0.984375, y: 0.984375}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1}
+  m_EdgeRadius: 0
