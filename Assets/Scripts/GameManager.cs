@@ -37,8 +37,8 @@ public class GameManager : MonoBehaviour
     private float hourScale;
 
     CameraController cam;
-    Ray ray;
-    RaycastHit hit;
+    Vector3 mousePos;
+    RaycastHit2D hit;
 
     #region intro screen
     public GameObject startScreen;
@@ -75,7 +75,7 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI energyText;
     #endregion
 
-
+    #region getters/setters
     public int IslandTemperature
     {
         get { return islandTemperature; }
@@ -85,6 +85,7 @@ public class GameManager : MonoBehaviour
     {
         get { return gameStarted; }
     }
+    #endregion
 
     private void Awake()
     {
@@ -122,14 +123,11 @@ public class GameManager : MonoBehaviour
         {
             if (Input.GetMouseButtonDown(0))
             {
-                ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out hit))
+                mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                hit = Physics2D.Raycast(mousePos, Vector3.zero);
+                if (hit.transform.tag == "Zone")
                 {
-                    Debug.Log("Hit: " + hit.collider.name);
-                    if(hit.transform.tag == "Zone")
-                    {
-                        selectedZone = hit.transform.GetComponent<Zone>();
-                    }
+                    selectedZone = hit.transform.GetComponent<Zone>();
                 }
             }
         }
