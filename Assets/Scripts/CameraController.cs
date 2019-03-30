@@ -18,6 +18,7 @@ public class CameraController : MonoBehaviour
 
     private void Awake()
     {
+        Camera.main.orthographicSize = minSize;
         gm = FindObjectOfType<GameManager>();
         map = FindObjectOfType<MapManager>();
         mapX = map.maxMapSizeX / 2;
@@ -32,7 +33,7 @@ public class CameraController : MonoBehaviour
         }
 
         UpdatePosition();
-        Zoom();
+        //Zoom();
     }
 
     public void PlayerLoaded()
@@ -43,13 +44,14 @@ public class CameraController : MonoBehaviour
 
     void UpdatePosition()
     {
-        velocity.x = Input.GetAxisRaw("Horizontal");
-        velocity.y = Input.GetAxisRaw("Vertical");
-        transform.Translate(velocity.normalized * (speed * 4) * Time.deltaTime);
-        Vector2 clampedPos = transform.position;
-        clampedPos.x = Mathf.Clamp(transform.position.x, -mapX, mapX);
-        clampedPos.y = Mathf.Clamp(transform.position.y, -mapY, mapY);
-        transform.position = new Vector3(clampedPos.x, clampedPos.y, -10);
+        //velocity.x = Input.GetAxisRaw("Horizontal");
+        //velocity.y = Input.GetAxisRaw("Vertical");
+        //transform.Translate(velocity.normalized * (speed * 4) * Time.deltaTime);
+        //Vector2 clampedPos = transform.position;
+        //clampedPos.x = Mathf.Clamp(transform.position.x, -mapX, mapX);
+        //clampedPos.y = Mathf.Clamp(transform.position.y, -mapY, mapY);
+        //transform.position = new Vector3(clampedPos.x, clampedPos.y, -10);
+        transform.position = new Vector3(target.transform.position.x, target.transform.position.y, -10f);
     }
 
     void Zoom()

@@ -9,8 +9,10 @@ public class GameManager : MonoBehaviour
 {
     public GameObject playerPrefab;
     public Player player;
-    public Zone playerInZone;
+    public Zone currentZone;
     public Zone selectedZone;
+
+    public List<Zone> neighbors = new List<Zone>();
 
     public enum Sky { Cloudy, Clear, Sunny }
     public Sky sky;
@@ -31,6 +33,7 @@ public class GameManager : MonoBehaviour
     private bool levelLoaded;
     private bool dayTime;
 
+
     private float chanceOfRain;
     private float currentLerpTime;
 
@@ -39,6 +42,7 @@ public class GameManager : MonoBehaviour
     public float hourScale;
 
     CameraController cam;
+    MapManager map;
     Vector3 mousePos;
     RaycastHit2D hit;
 
@@ -78,6 +82,12 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI statusText;
     #endregion
 
+    #region Player Info UI
+    public Button exploreButton;
+    public Button walkButton;
+    public TextMeshProUGUI playerEnergyText;
+    #endregion
+
     #region getters/setters
     public int IslandTemperature
     {
@@ -93,6 +103,7 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         cam = FindObjectOfType<CameraController>();
+        map = FindObjectOfType<MapManager>();
         StartCoroutine(TextFadeIn());
         islandTemperature = hottestTempOfTheDay;
         sky = Sky.Clear;
@@ -107,39 +118,11 @@ public class GameManager : MonoBehaviour
     private void Update()
     {
         UpdateWorldInfo();
-
-        if (playerInZone != null)
-        {
-            LoadZoneInfo();
-        }
-
-        if (hour >= 20 || hour >= 00 && hour < 06)
-        {
-            dayTime = false;
-        }
-        else
-        {
-            dayTime = true;
-        }
-
-        if (gameStarted)
-        {
-            if (Input.GetMouseButtonDown(0))
-            {
-                // if this isn't a UI element
-                if (!EventSystem.current.IsPointerOverGameObject())
-                {
-                    mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                    hit = Physics2D.Raycast(mousePos, Vector3.zero);
-                    if (hit.transform.tag == "Zone")
-                    {
-                        selectedZone.Selected = false;
-                        selectedZone = hit.transform.GetComponent<Zone>();
-                        selectedZone.Selected = true;
-                    }
-                }
-            }
-        }
+        LoadZoneInfo();
+        DayNight();
+        UpdatePlayerInfo();
+        MouseClick();
+        CheckButtons();
     }
 
     #region island stat functions
@@ -151,11 +134,12 @@ public class GameManager : MonoBehaviour
             minutes++;
             if(minutes > 59)
             {
-                player.ReduceEnergy(45);
                 hour++;
                 minutes = 00;
+                int energyLoss = player.baseEnergy;
+                player.ReduceEnergy(energyLoss);
 
-                if(hour > 23)
+                if (hour > 23)
                 {
                     hour = 00;
                     day++;
@@ -315,22 +299,23 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    void DayNight()
+    {
+        if (hour >= 20 || hour >= 00 && hour < 06)
+        {
+            dayTime = false;
+        }
+        else
+        {
+            dayTime = true;
+        }
+    }
+
     int RandomNumber(int x, int y)
     {
         return Random.Range(x, y + 1);
     }
     #endregion
-
-    public void InstantiatePlayer(Zone _zone)
-    {
-        GameObject playerGo = Instantiate(playerPrefab, _zone.ZonePosition, Quaternion.identity);
-        player = FindObjectOfType<Player>();
-        player.currentPosition = _zone.ZonePosition;
-        playerInZone = _zone;
-        selectedZone = _zone;
-        selectedZone.Selected = true;
-        levelLoaded = true;
-    }
 
     #region intro functions
     IEnumerator TextFadeIn()
@@ -440,9 +425,17 @@ public class GameManager : MonoBehaviour
         timeText.text = "Time: " + timeOfDay;
         skyText.text = "Conditions: " + sky.ToString();
         weatherText.text = "Weather: " + weather.ToString();
-        if(playerInZone != null)
+        if(currentZone != null)
         {
-            temperatureText.text = "Zone Temperature: " + playerInZone.zoneTemperature.ToString() + "F";
+            temperatureText.text = "Zone Temperature: " + currentZone.zoneTemperature.ToString() + "F";
+        }
+    }
+
+    void UpdatePlayerInfo()
+    {
+        if(player != null)
+        {
+            playerEnergyText.text = "Energy: " + player.energy;
         }
     }
     #endregion
@@ -450,8 +443,12 @@ public class GameManager : MonoBehaviour
     #region player button presses
     public void ExploreAreaOnButton()
     {
-        
         StartCoroutine(ExploreArea());
+    }
+
+    public void WalkOnButton()
+    {
+        StartCoroutine(Walk());
     }
 
     #endregion
@@ -459,14 +456,15 @@ public class GameManager : MonoBehaviour
     #region player Coroutines
     IEnumerator ExploreArea()
     {
+        Zone zoneToExplore = selectedZone;;
         // if the zone hasn't been explored yet, and we are in the the selected zone
-        if (!selectedZone.Explored && selectedZone == playerInZone)
-        {
+        if (!zoneToExplore.Explored && zoneToExplore == currentZone)
+        {        
             bool exploring = true;
             // time to explore
             int timeToExplore = 3;
             // energy cost per hour
-            int energyCostPerHour = 100;
+            int energyCostPerHour = zoneToExplore.ZoneEnergy / 2;
             // current hour
             int currentHour = hour;
             // current minutes
@@ -478,7 +476,7 @@ public class GameManager : MonoBehaviour
                 goal -= 23;
             }
 
-            player.state = Player.State.Exploring;
+            player.state = Player.State.Activity;
             // fast forward time
             hourScale = fastHourScale;
 
@@ -499,9 +497,142 @@ public class GameManager : MonoBehaviour
             // reduce player energy
             player.ReduceEnergy(energyCostPerHour * timeToExplore);
             // set zone to explored
-            selectedZone.Explored = true;
+            zoneToExplore.Explored = true;
+            player.state = Player.State.Rest;
         }
     }
 
+    IEnumerator Walk()
+    {
+        Zone zoneToWalkTo = selectedZone;
+        // if the zone hasn't been explored yet, and we are in the the selected zone
+        currentZone.ClearNeighbors();
+        currentZone.Occupied = false;
+        bool walking = true;
+        // time to explore
+        int timeToWalk = 1;
+        // energy cost per hour
+        int energyCostPerHour = zoneToWalkTo.ZoneEnergy;
+        // current hour
+        int currentHour = hour;
+        // current minutes
+        int currentMin = minutes;
+        // goal hour
+        int goal = currentHour + timeToWalk;
+        if (goal > 23)
+        {
+            goal -= 24;
+        }
+
+        player.state = Player.State.Activity;
+        // fast forward time
+        hourScale = fastHourScale;
+
+        while (walking)
+        {
+            player.transform.position = Vector2.MoveTowards(player.transform.position, zoneToWalkTo.transform.position, .3f * Time.deltaTime);
+            if (hour == goal)
+            {
+                if (minutes == currentMin)
+                {
+                    walking = false;
+                }
+            }
+
+            yield return null;
+        }
+
+        player.transform.position = zoneToWalkTo.transform.position;
+        // set time to normal
+        hourScale = baseHourScale;
+        // reduce player energy
+        player.ReduceEnergy(energyCostPerHour * timeToWalk);
+        currentZone = zoneToWalkTo;
+        currentZone.Occupied = true;
+        currentZone.SetNeighbors();
+        player.state = Player.State.Rest;
+    }
     #endregion
+
+    public void InstantiatePlayer(Zone _zone)
+    {
+        GameObject playerGo = Instantiate(playerPrefab, _zone.ZonePosition, Quaternion.identity);
+        player = FindObjectOfType<Player>();
+        player.currentPosition = _zone.ZonePosition;
+
+        currentZone = _zone;
+        currentZone.Occupied = true;
+        currentZone.SetNeighbors();
+
+        selectedZone = _zone;
+        selectedZone.Selected = true;
+
+        levelLoaded = true;
+    }
+
+    void MouseClick()
+    {
+        if (gameStarted)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                // if this isn't a UI element
+                if (!EventSystem.current.IsPointerOverGameObject())
+                {
+                    mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                    hit = Physics2D.Raycast(mousePos, Vector3.zero);
+                    if (hit.transform.tag == "Zone")
+                    {
+                        selectedZone.Selected = false;
+                        selectedZone = hit.transform.GetComponent<Zone>();
+                        selectedZone.Selected = true;
+                    }
+                }
+            }
+        }
+    }
+
+    void CheckButtons()
+    {
+        // EXPLORE
+        exploreButton.interactable = selectedZone.Occupied && !selectedZone.Explored && player.state == Player.State.Rest;
+
+        if (exploreButton.interactable)
+        {
+            exploreButton.GetComponentInChildren<Text>().text = "Cost to Explore: " + (selectedZone.ZoneEnergy / 2 * 3) + "eph\n"
+                + "Total Hours: 3 Hours";
+        }
+        else
+        {
+            exploreButton.GetComponentInChildren<Text>().text = "Explore";
+        }
+
+        // WALK
+        walkButton.interactable = IsZoneInWalkingDistance() && player.state == Player.State.Rest && currentZone != selectedZone;
+
+        if (walkButton.interactable)
+        {
+            walkButton.GetComponentInChildren<Text>().text = "Cost to Move: " + (selectedZone.ZoneEnergy + "eph\n" 
+                + "Total Hours: 1 Hour");
+        }
+        else
+        {
+            walkButton.GetComponentInChildren<Text>().text = "Move";
+        }
+    }
+
+    bool IsZoneInWalkingDistance()
+    {
+        bool zoneInRange = false;
+        foreach (Zone neighbor in neighbors)
+        {
+            if (selectedZone.ZonePosition == neighbor.ZonePosition)
+            {
+                Debug.Log("Checking: " + neighbor.ZonePosition);
+                zoneInRange = true;
+            }
+        }
+
+        return zoneInRange;
+    }
 }

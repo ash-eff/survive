@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Zone : MonoBehaviour
 {
+    public LayerMask zoneLayer;
+
     public enum TerrainType { Water, Beach, Clearing, Forrest, }
     public TerrainType terrainType;
 
@@ -23,7 +25,8 @@ public class Zone : MonoBehaviour
 
     private Vector2 zonePosition; // the position of the zone 
     private Vector2 closestPoint; // current closest point 
-    
+    private Vector2[] directions = new[] { Vector2.up, Vector2.right, Vector2.down, Vector2.left };
+
     private float gradientValue; // the higher this number is, the further from the closest point the zone is
     private float roundedPerlin; // final perlin value, rounded to two decimals;
     private float gradientPerlin;
@@ -41,10 +44,13 @@ public class Zone : MonoBehaviour
     private bool tempShelter; // does the player have a temporary shelter here?
     private bool selfPoint; // is this zone one of the points set by the map?
     private bool selected;
-    private bool rollover;
+    public bool neighbor;
+    private bool occupied;
     private bool explored;
 
     GameManager gm;
+    MapManager map;
+    BoxCollider2D coll2d;
 
     #region item bools
     private bool flora; // plants and seeds
@@ -183,10 +189,22 @@ public class Zone : MonoBehaviour
         set { explored = value; }
     }
 
+    public bool Neighbor
+    {
+        get { return neighbor; }
+        set { neighbor = value; }
+    }
+
+    public bool Occupied
+    {
+        get { return occupied; }
+        set { occupied = value; }
+    }
     #endregion
 
     private void OnEnable()
     {
+        coll2d = FindObjectOfType<BoxCollider2D>();
         spr = GetComponent<SpriteRenderer>();
         gm = FindObjectOfType<GameManager>();
     }
@@ -205,7 +223,7 @@ public class Zone : MonoBehaviour
             status = Status.Explored;
         }
 
-        outline1.SetActive(rollover);
+        outline1.SetActive(neighbor);
         outline2.SetActive(selected);
     }
 
@@ -543,14 +561,34 @@ public class Zone : MonoBehaviour
         return temp;
     }
 
-    private void OnMouseOver()
+    public void SetNeighbors()
     {
-        rollover = true;
+        foreach (Vector2 dir in directions)
+        {
+            coll2d.enabled = false;
+            RaycastHit2D hit = Physics2D.Raycast(ZonePosition, dir * 2);
+            if (hit)
+            {
+                gm.neighbors.Add(hit.transform.GetComponent<Zone>());
+                hit.transform.GetComponent<Zone>().Neighbor = true;
+            }
+            coll2d.enabled = true;
+        }
     }
 
-    private void OnMouseExit()
+    public void ClearNeighbors()
     {
-        rollover = false;
+        foreach (Vector2 dir in directions)
+        {
+            gm.neighbors.Clear();
+            coll2d.enabled = false;
+            RaycastHit2D hit = Physics2D.Raycast(ZonePosition, dir * 2);
+            if (hit)
+            {
+                hit.transform.GetComponent<Zone>().Neighbor = false;
+            }
+            coll2d.enabled = true;
+        }
     }
 
     // coroutine to replenish items over time
