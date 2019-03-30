@@ -139,10 +139,14 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
+<<<<<<< HEAD
   - {fileID: 1100312897}
   - {fileID: 555259986}
   - {fileID: 115567037}
   - {fileID: 1440433310}
+=======
+  - {fileID: 1856910543}
+>>>>>>> dc4ca18379e8e3049fb97e1a625912f36c048dc3
   m_Father: {fileID: 110663169}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -353,8 +357,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 355665e481cc92443914a7000cf186dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+<<<<<<< HEAD
   loadingImage: {fileID: 1440433312}
   loading: {fileID: 1100312895}
+=======
+  sceneLoaded: 0
+  text: {fileID: 0}
+  inColor: {r: 1, g: 1, b: 1, a: 1}
+  outColor: {r: 1, g: 1, b: 1, a: 0}
+  lerpTime: 10
+>>>>>>> dc4ca18379e8e3049fb97e1a625912f36c048dc3
 --- !u!4 &129819536
 Transform:
   m_ObjectHideFlags: 0
@@ -525,6 +537,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+<<<<<<< HEAD
 --- !u!1 &1100312894
 GameObject:
   m_ObjectHideFlags: 0
@@ -760,6 +773,8 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
+=======
+>>>>>>> dc4ca18379e8e3049fb97e1a625912f36c048dc3
 --- !u!1 &1488314528
 GameObject:
   m_ObjectHideFlags: 0
