@@ -99,6 +99,17 @@ public class GameManager : MonoBehaviour
     {
         get { return gameStarted; }
     }
+
+    public int Hour
+    {
+        get { return hour; }
+    }
+
+    public int Minutes
+    {
+        get { return minutes; }
+    }
+
     #endregion
 
     private void Awake()
@@ -137,7 +148,7 @@ public class GameManager : MonoBehaviour
             {
                 hour++;
                 minutes = 00;
-                int energyLoss = player.baseEnergy;
+                int energyLoss = player.totalEnergyLoss;
                 player.ReduceEnergy(energyLoss);
 
                 if (hour > 23)
@@ -562,6 +573,7 @@ public class GameManager : MonoBehaviour
     IEnumerator Sleep()
     {
         player.state = Player.State.Sleep;
+        player.GetFatigueTimer(18);
         bool sleeping = true;
         int timeToSleep = 8;
         // current hour
@@ -595,14 +607,27 @@ public class GameManager : MonoBehaviour
         hourScale = baseHourScale;
         // reduce player energy
         player.state = Player.State.Rest;
+
     }
     #endregion
+
+    int HourTimesTen()
+    {
+        int hourTimesTen = hour * 10;
+        if (hourTimesTen > 23)
+        {
+            hourTimesTen -= 24;
+        }
+
+        return hourTimesTen;
+    }
 
     public void InstantiatePlayer(Zone _zone)
     {
         GameObject playerGo = Instantiate(playerPrefab, _zone.ZonePosition, Quaternion.identity);
         player = FindObjectOfType<Player>();
         player.currentPosition = _zone.ZonePosition;
+        int futureHour = HourTimesTen();
 
         currentZone = _zone;
         currentZone.Occupied = true;
@@ -612,6 +637,7 @@ public class GameManager : MonoBehaviour
         selectedZone.Selected = true;
 
         levelLoaded = true;
+        player.GetFatigueTimer(10);
     }
 
     void MouseClick()
