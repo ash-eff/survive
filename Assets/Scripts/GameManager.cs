@@ -85,6 +85,7 @@ public class GameManager : MonoBehaviour
     #region Player Info UI
     public Button exploreButton;
     public Button walkButton;
+    public Button sleepButton;
     public TextMeshProUGUI playerEnergyText;
     #endregion
 
@@ -451,6 +452,11 @@ public class GameManager : MonoBehaviour
         StartCoroutine(Walk());
     }
 
+    public void SleepOnButton()
+    {
+        StartCoroutine(Sleep());
+    }
+
     #endregion
 
     #region player Coroutines
@@ -476,7 +482,7 @@ public class GameManager : MonoBehaviour
                 goal -= 23;
             }
 
-            player.state = Player.State.Activity;
+            player.state = Player.State.Active;
             // fast forward time
             hourScale = fastHourScale;
 
@@ -524,7 +530,7 @@ public class GameManager : MonoBehaviour
             goal -= 24;
         }
 
-        player.state = Player.State.Activity;
+        player.state = Player.State.Active;
         // fast forward time
         hourScale = fastHourScale;
 
@@ -550,6 +556,44 @@ public class GameManager : MonoBehaviour
         currentZone = zoneToWalkTo;
         currentZone.Occupied = true;
         currentZone.SetNeighbors();
+        player.state = Player.State.Rest;
+    }
+
+    IEnumerator Sleep()
+    {
+        player.state = Player.State.Sleep;
+        bool sleeping = true;
+        int timeToSleep = 8;
+        // current hour
+        int currentHour = hour;
+        // current minutes
+        int currentMin = minutes;
+        // goal hour
+        int goal = timeToSleep;
+        if (goal > 23)
+        {
+            goal -= 24;
+        }
+
+        // fast forward time
+        hourScale = fastHourScale / 2;
+
+        while (sleeping)
+        {
+            if (hour == goal)
+            {
+                if (minutes == currentMin)
+                {
+                    sleeping = false;
+                }
+            }
+
+            yield return null;
+        }
+
+        // set time to normal
+        hourScale = baseHourScale;
+        // reduce player energy
         player.state = Player.State.Rest;
     }
     #endregion
@@ -618,6 +662,19 @@ public class GameManager : MonoBehaviour
         else
         {
             walkButton.GetComponentInChildren<Text>().text = "Move";
+        }
+
+        // SLEEP
+        sleepButton.interactable = player.state == Player.State.Rest;
+
+        if (walkButton.interactable)
+        {
+            walkButton.GetComponentInChildren<Text>().text = "Cost to Sleep: 45eph\n"
+                + "Total Hours: 8 Hour";
+        }
+        else
+        {
+            walkButton.GetComponentInChildren<Text>().text = "Sleep";
         }
     }
 

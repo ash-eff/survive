@@ -5,7 +5,7 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
 
-    public enum State { Rest, Activity }
+    public enum State { Rest, Active, Sleep }
     public State state = State.Rest;
 
     public Vector2 currentPosition;
