@@ -18,6 +18,8 @@ public class Zone : MonoBehaviour
     public enum Status { Explored, Unexplored, }
     public Status status = Status.Unexplored;
 
+    public int numOfDayUntilReplenish;
+
     public GameObject outline1;
     public GameObject outline2;
 
@@ -40,51 +42,45 @@ public class Zone : MonoBehaviour
     private float decreasedMultiplier = .5f;
 
     private bool startingPosition; // is this zone the starting position of the player?
-    private bool mainShelter; // is the player's main shelter in this zone?
-    private bool tempShelter; // does the player have a temporary shelter here?
+    private bool shelter; // does the player have a shelter here?
     private bool selfPoint; // is this zone one of the points set by the map?
     private bool selected;
     public bool neighbor;
     private bool occupied;
     private bool explored;
+    private bool replenished;
 
     GameManager gm;
     MapManager map;
     BoxCollider2D coll2d;
 
     #region item bools
-    private bool flora; // plants and seeds
-    private bool fauna; // meat and fur
+    private bool fauna; // meat 
+    private bool flora; // plants
     private bool medicine; // medicinal plants
     private bool fabric; // cloth
-    private bool scrap; // plastic and metal
     private bool lumber; // logs and branches
     private bool water; // water
-    private bool fish; // meat
     private bool rock; // rocks
+    private bool fish; // meat
     #endregion
 
     #region item numbers
     private int plants;
-    private int basePlants = 10;
-    private int seeds;
-    private int baseSeeds = 5;
-    private int meat;
-    private int baseMeat = 2;
-    private int fur;
-    private int baseFur = 1;
+    private int basePlants = 15;
+    private int startPlants;
     private int medicinal;
     private int baseMedicinal = 2;
+    private int startMedicinal;
     private int cloth;
     private int baseCloth = 1;
-    private int plastic;
-    private int basePlastic = 1;
-    private int metal;
-    private int baseMetal = 1;
+    private int startCloth;
     private int wood;
     private int basewood = 5;
-    private int rocks;
+    private int startWood;
+    public int rocks;
     private int baseRocks = 10;
+    private int startRocks;
     #endregion
 
     #region getters and setters
@@ -103,79 +99,56 @@ public class Zone : MonoBehaviour
     {
         set { startingPosition = value; zoneFeature = ZoneFeature.Wreckage;
             lumber = true;
-            scrap = true;
             fabric = true;
             wood += basewood;
-            plastic += basePlastic;
-            metal += baseMetal;
             cloth += baseCloth;
         }
     }
 
-    public bool MainShelter
+    public bool Shelter
     {
-        get { return mainShelter; }
-        set { mainShelter = value; }
-    }
-
-    public bool TempShelter
-    {
-        get { return tempShelter; }
-        set { tempShelter = value; }
+        get { return shelter; }
+        set { shelter = value; }
     }
 
     public int ZoneEnergy
     {
         get { return zoneEnergy; }
     }
+
+    public bool Water
+    {
+        get { return water; }
+    }
+
     public int Plants
     {
         get { return plants; }
-    }
-
-    public int Seeds
-    {
-        get { return seeds; }
-    }
-
-    public int Meat
-    {
-        get { return meat; }
-    }
-
-    public int Fur
-    {
-        get { return fur; }
+        set { plants = value; }
     }
 
     public int Medicinal
     {
         get { return medicinal; }
+        set { medicinal = value; }
     }
 
     public int Cloth
     {
         get { return cloth; }
-    }
-
-    public int Plastic
-    {
-        get { return plastic; }
-    }
-
-    public int Metal
-    {
-        get { return metal; }
+        set { cloth = value; }
     }
 
     public int Wood
     {
         get { return wood; }
+        set { wood = value; }
     }
 
     public int Rocks
     {
         get { return rocks; }
+        set { rocks = value; }
     }
 
     public bool Selected
@@ -200,6 +173,17 @@ public class Zone : MonoBehaviour
         get { return occupied; }
         set { occupied = value; }
     }
+
+    public bool Flora
+    {
+        get { return flora; }
+    }
+
+    public bool Fauna
+    {
+        get { return fauna; }
+    }
+
     #endregion
 
     private void OnEnable()
@@ -218,6 +202,11 @@ public class Zone : MonoBehaviour
             return;
         }
 
+        if (startingPosition)
+        {
+            explored = true;
+        }
+
         if (explored)
         {
             status = Status.Explored;
@@ -225,6 +214,8 @@ public class Zone : MonoBehaviour
 
         outline1.SetActive(neighbor);
         outline2.SetActive(selected);
+
+        //ReplenishZone();
     }
 
     public void CalculateClosestPoint(Vector2 _point)
@@ -333,13 +324,11 @@ public class Zone : MonoBehaviour
             {
                 terrainSubType = TerrainSubType.Deep;
                 zoneEnergy = GetEnergyCost(0);
-                meat += baseMeat * increasedMultiplier;
             }
             else
             {
                 terrainSubType = TerrainSubType.Shallow;
                 zoneEnergy = GetEnergyCost(0);
-                meat += baseMeat;
             }
         }
 
@@ -348,6 +337,8 @@ public class Zone : MonoBehaviour
         {
             zoneEnergy = GetEnergyCost(0);
             rock = true;
+            water = true;
+            fish = true;
             float chance = Random.value;
 
             if (chance > 0.7)
@@ -373,25 +364,15 @@ public class Zone : MonoBehaviour
         if(terrainType == TerrainType.Clearing)
         {
             zoneEnergy = GetEnergyCost(0);
-            flora = true;
-            fauna = true;
 
             float chance = Random.value;
             if (chance > 0.7)
             {
                 terrainSubType = TerrainSubType.Bare;
-                meat += Mathf.RoundToInt(baseMeat * decreasedMultiplier);
-                fur += Mathf.RoundToInt(baseFur * decreasedMultiplier);
-                plants += Mathf.RoundToInt(basePlants * decreasedMultiplier);
-                seeds += Mathf.RoundToInt(baseSeeds * decreasedMultiplier);
             }
             else
             {
                 terrainSubType = TerrainSubType.Clear;
-                meat += baseMeat;
-                fur += baseFur;
-                plants += basePlants;
-                seeds += baseSeeds;
             }
 
             SetZoneFeature();
@@ -401,26 +382,17 @@ public class Zone : MonoBehaviour
         if (terrainType == TerrainType.Forrest)
         {
             float chance = Random.value;
-            flora = true;
-            fauna = true;
             lumber = true;
             if (chance > 0.5)
             {
                 terrainSubType = TerrainSubType.Standard;
-                meat += baseMeat;
-                fur += baseFur;
-                plants += basePlants;
-                seeds += baseSeeds;
                 wood += basewood;
                 zoneEnergy = GetEnergyCost(.5f);
             }
             else
             {
                 terrainSubType = TerrainSubType.OverGrown;
-                meat += baseMeat * increasedMultiplier;
-                fur += baseFur * increasedMultiplier;
-                plants += Mathf.RoundToInt(basePlants * decreasedMultiplier);
-                seeds += Mathf.RoundToInt(baseSeeds * decreasedMultiplier);
+                plants += basePlants * increasedMultiplier;
                 wood += basewood * increasedMultiplier;
                 zoneEnergy = GetEnergyCost(1);
             }
@@ -440,11 +412,8 @@ public class Zone : MonoBehaviour
             {
                 zoneFeature = ZoneFeature.Wreckage;
                 lumber = true;
-                scrap = true;
                 fabric = true;
                 wood += basewood;
-                plastic += basePlastic;
-                metal += baseMetal;
                 cloth += baseCloth;
             }
         }
@@ -452,6 +421,8 @@ public class Zone : MonoBehaviour
         // clearing
         if (terrainType == TerrainType.Clearing)
         {
+            plants += basePlants;
+            flora = true;
             if (featChance > 0.80)
             {
                 float waterType = Random.value;
@@ -460,16 +431,12 @@ public class Zone : MonoBehaviour
                     zoneFeature = ZoneFeature.Lake;
                     fish = true;
                     water = true;
-                    meat += baseMeat;
-                    meat += 1; // one extra fauna
-                    fur += 1; // one extra fauna
+                    
                     return;
                 }
                 else
                 {
                     zoneFeature = ZoneFeature.Stream;
-                    meat += 1; // one extra fauna
-                    fur += 1; // one extra fauna
                     water = true;
                 }
             }
@@ -478,6 +445,8 @@ public class Zone : MonoBehaviour
         // forrest
         if (terrainType == TerrainType.Forrest)
         {
+            flora = true;
+            plants += basePlants;
             if (featChance > 0.80)
             {
                 float waterType = Random.value;
@@ -485,6 +454,7 @@ public class Zone : MonoBehaviour
                 {
                     zoneFeature = ZoneFeature.Bog;
                     medicinal += baseMedicinal * increasedMultiplier;
+                    plants += Mathf.RoundToInt(basePlants * decreasedMultiplier);
                     return;
                 }
                 else if (waterType > .45)
@@ -492,20 +462,28 @@ public class Zone : MonoBehaviour
                     zoneFeature = ZoneFeature.Lake;
                     fish = true;
                     water = true;
-                    meat += baseMeat;
-                    meat += 1; // one extra fauna
-                    fur += 1; // one extra fauna
+                    plants += basePlants;
                     return;
                 }
                 else
                 {
                     zoneFeature = ZoneFeature.Stream;
-                    meat += 1; // one extra fauna
-                    fur += 1; // one extra fauna
+                    plants += basePlants;
                     water = true;
                 }
             }
         }
+
+        SetStartItems();
+    }
+
+    private void SetStartItems()
+    {
+        startPlants = plants;
+        startCloth = cloth;
+        startMedicinal = medicinal;
+        startWood = wood;
+        startRocks = rocks;
     }
 
     private int GetEnergyCost(float subtypeMod)
@@ -591,5 +569,38 @@ public class Zone : MonoBehaviour
         }
     }
 
-    // coroutine to replenish items over time
+    void ReplenishZone()
+    {
+        // this needs to only replenish once when it does replenish
+        int currentDay = gm.Day;
+        if(currentDay % numOfDayUntilReplenish == 0 && !replenished)
+        {
+            if(Random.value > .4 && terrainType != TerrainType.Water)
+            {
+                fauna = true;
+            }
+            else
+            {
+                fauna = false;
+            }
+            medicinal = startMedicinal;
+            cloth = startCloth;
+            wood = startWood;
+            rocks = startRocks;
+            replenished = true;
+        }
+
+        if(currentDay % numOfDayUntilReplenish != 0)
+        {
+            if (Random.value > .4 && terrainType != TerrainType.Water)
+            {
+                fauna = true;
+            }
+            else
+            {
+                fauna = false;
+            }
+            replenished = false;
+        }
+    }
 }

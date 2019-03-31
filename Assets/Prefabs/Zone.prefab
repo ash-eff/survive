@@ -261,6 +261,7 @@ MonoBehaviour:
   terrainSubType: 0
   zoneFeature: 0
   status: 1
+  numOfDayUntilReplenish: 1
   outline1: {fileID: 2197088238116558226}
   outline2: {fileID: 5396518981772697583}
   zoneTemperature: 0

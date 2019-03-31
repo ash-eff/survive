@@ -8,6 +8,7 @@ using UnityEngine.EventSystems;
 public class GameManager : MonoBehaviour
 {
     public GameObject playerPrefab;
+    public GameObject campPrefab;
     public Player player;
     public Zone currentZone;
     public Zone selectedZone;
@@ -20,9 +21,12 @@ public class GameManager : MonoBehaviour
     public enum Weather { Rain, Snow, NoPrecipitation }
     public Weather weather;
 
+    public enum State { Island, Camp, }
+    public State state = State.Island;
+
     private string timeOfDay;
     private int day = 1;
-    private int hour;
+    public int hour;
     private int minutes;
     private int islandTemperature;
     private int hottestTempOfTheDay = 60;
@@ -32,7 +36,6 @@ public class GameManager : MonoBehaviour
     private bool gameStarted;
     private bool levelLoaded;
     private bool dayTime;
-
 
     private float chanceOfRain;
     private float currentLerpTime;
@@ -58,6 +61,7 @@ public class GameManager : MonoBehaviour
 
     #region World Info UI
     public GameObject worldOverlay;
+    public GameObject campOverlay;
     public TextMeshProUGUI dayText;
     public TextMeshProUGUI timeText;
     public TextMeshProUGUI skyText;
@@ -66,14 +70,11 @@ public class GameManager : MonoBehaviour
     #endregion
 
     #region Zone Info UI
+    public TextMeshProUGUI waterText;
+    public TextMeshProUGUI tracksText;
     public TextMeshProUGUI plantsText;
-    public TextMeshProUGUI seedsText;
-    public TextMeshProUGUI meatText;
-    public TextMeshProUGUI furText;
     public TextMeshProUGUI medicineText;
     public TextMeshProUGUI clothText;
-    public TextMeshProUGUI plasticText;
-    public TextMeshProUGUI metalText;
     public TextMeshProUGUI woodText;
     public TextMeshProUGUI rockText;
     public TextMeshProUGUI terrainText;
@@ -83,10 +84,25 @@ public class GameManager : MonoBehaviour
     #endregion
 
     #region Player Info UI
-    public Button exploreButton;
+    public Button gatherButton;
     public Button walkButton;
     public Button sleepButton;
+    public Button waterButton;
+    public Button drinkButton;
+    public Button fishButton;
+    public Button huntButton;
+    public Button buildCampButton;
+    public Button enterCampButton;
+    public Button exitCamp;
     public TextMeshProUGUI playerEnergyText;
+    public TextMeshProUGUI playerMeatText;
+    public TextMeshProUGUI playerPlantText;
+    public TextMeshProUGUI playerMedText;
+    public TextMeshProUGUI playerClothText;
+    public TextMeshProUGUI playerWoodText;
+    public TextMeshProUGUI playerRockText;
+    public TextMeshProUGUI playerWaterText;
+    public Toggle treated;
     #endregion
 
     #region getters/setters
@@ -108,6 +124,11 @@ public class GameManager : MonoBehaviour
     public int Minutes
     {
         get { return minutes; }
+    }
+
+    public int Day
+    {
+        get { return day; }
     }
 
     #endregion
@@ -135,6 +156,8 @@ public class GameManager : MonoBehaviour
         UpdatePlayerInfo();
         MouseClick();
         CheckButtons();
+        UpdateItems();
+        treated.isOn = player.TreatedWater;
     }
 
     #region island stat functions
@@ -389,6 +412,7 @@ public class GameManager : MonoBehaviour
         gameStarted = true;
         worldOverlay.SetActive(true);
         StartCoroutine(RunClock());
+        player.SetSleepTimer();
     }
     #endregion
 
@@ -397,14 +421,11 @@ public class GameManager : MonoBehaviour
     {
         if (!selectedZone.Explored)
         {
+            waterText.text = "Water: ??";
+            tracksText.text = "Tracks: ??";
             plantsText.text = "Plants: ??";
-            seedsText.text = "Seeds: ??";
-            meatText.text = "Meat: ??";
-            furText.text = "Fur: ??";
             medicineText.text = "Meds: ??";
             clothText.text = "Cloth: ??";
-            plasticText.text = "Plastic: ??";
-            metalText.text = "Metal: ??";
             woodText.text = "Wood: ??";
             rockText.text = "Rocks: ??";
             terrainText.text = "Terrain: " + selectedZone.terrainType.ToString();
@@ -414,14 +435,11 @@ public class GameManager : MonoBehaviour
         }
         else
         {
+            waterText.text = "Water: " + selectedZone.Water.ToString();
+            tracksText.text = "Tracks: " + selectedZone.Flora.ToString();
             plantsText.text = "Plants: " + selectedZone.Plants.ToString();
-            seedsText.text = "Seeds: " + selectedZone.Seeds.ToString();
-            meatText.text = "Meat: " + selectedZone.Meat.ToString();
-            furText.text = "Fur: " + selectedZone.Fur.ToString();
             medicineText.text = "Meds: " + selectedZone.Medicinal.ToString();
             clothText.text = "Cloth: " + selectedZone.Cloth.ToString();
-            plasticText.text = "Plastic: " + selectedZone.Plastic.ToString();
-            metalText.text = "Metal: " + selectedZone.Metal.ToString();
             woodText.text = "Wood: " + selectedZone.Wood.ToString();
             rockText.text = "Rocks: " + selectedZone.Rocks.ToString();
             terrainText.text = "Terrain: " + selectedZone.terrainSubType.ToString() + " " + selectedZone.terrainType.ToString();
@@ -453,9 +471,9 @@ public class GameManager : MonoBehaviour
     #endregion
 
     #region player button presses
-    public void ExploreAreaOnButton()
+    public void GatherOnButton()
     {
-        StartCoroutine(ExploreArea());
+        StartCoroutine(Gather());
     }
 
     public void WalkOnButton()
@@ -468,29 +486,57 @@ public class GameManager : MonoBehaviour
         StartCoroutine(Sleep());
     }
 
+    public void CollectWaterOnButton()
+    {
+        player.CollectWater();
+    }
+
+    public void BuildCamp()
+    {
+        StartCoroutine(BuildBasicCamp());
+    }
+
+    public void EnterCamp()
+    {
+        state = State.Camp;
+        player.TreatedWater = true;
+        campOverlay.SetActive(true);
+    }
+
+    public void ExitCamp()
+    {
+        state = State.Island;
+        campOverlay.SetActive(false);
+    }
+
+    public void OnDrinkButton()
+    {
+        player.DrinkWater();
+    }
+
     #endregion
 
     #region player Coroutines
-    IEnumerator ExploreArea()
+    IEnumerator Gather()
     {
-        Zone zoneToExplore = selectedZone;;
-        // if the zone hasn't been explored yet, and we are in the the selected zone
-        if (!zoneToExplore.Explored && zoneToExplore == currentZone)
+        Zone zoneToGather = selectedZone;;
+
+        if (zoneToGather == currentZone)
         {        
             bool exploring = true;
-            // time to explore
-            int timeToExplore = 3;
+            // time to gather
+            int timeToGather = 3;
             // energy cost per hour
-            int energyCostPerHour = zoneToExplore.ZoneEnergy / 2;
+            int energyCostPerHour = zoneToGather.ZoneEnergy / 2;
             // current hour
             int currentHour = hour;
             // current minutes
             int currentMin = minutes;
             // goal hour
-            int goal = currentHour + timeToExplore;
-            if (goal > 23)
+            int goal = currentHour + timeToGather;
+            if (goal >= 24)
             {
-                goal -= 23;
+                goal -= 24;
             }
 
             player.state = Player.State.Active;
@@ -509,12 +555,12 @@ public class GameManager : MonoBehaviour
 
                 yield return null;
             }
+
+            player.GatherItems(zoneToGather);
             // set time to normal
             hourScale = baseHourScale;
             // reduce player energy
-            player.ReduceEnergy(energyCostPerHour * timeToExplore);
-            // set zone to explored
-            zoneToExplore.Explored = true;
+            player.ReduceEnergy(energyCostPerHour * timeToGather);
             player.state = Player.State.Rest;
         }
     }
@@ -536,7 +582,7 @@ public class GameManager : MonoBehaviour
         int currentMin = minutes;
         // goal hour
         int goal = currentHour + timeToWalk;
-        if (goal > 23)
+        if (goal >= 24)
         {
             goal -= 24;
         }
@@ -567,13 +613,15 @@ public class GameManager : MonoBehaviour
         currentZone = zoneToWalkTo;
         currentZone.Occupied = true;
         currentZone.SetNeighbors();
+        // set zone to explored
+        zoneToWalkTo.Explored = true;
         player.state = Player.State.Rest;
     }
 
     IEnumerator Sleep()
     {
         player.state = Player.State.Sleep;
-        player.GetFatigueTimer(18);
+
         bool sleeping = true;
         int timeToSleep = 8;
         // current hour
@@ -581,8 +629,8 @@ public class GameManager : MonoBehaviour
         // current minutes
         int currentMin = minutes;
         // goal hour
-        int goal = timeToSleep;
-        if (goal > 23)
+        int goal = currentHour + timeToSleep;
+        if (goal >= 24)
         {
             goal -= 24;
         }
@@ -607,27 +655,62 @@ public class GameManager : MonoBehaviour
         hourScale = baseHourScale;
         // reduce player energy
         player.state = Player.State.Rest;
-
+        player.SetSleepTimer();
     }
-    #endregion
 
-    int HourTimesTen()
+    IEnumerator BuildBasicCamp()
     {
-        int hourTimesTen = hour * 10;
-        if (hourTimesTen > 23)
+        player.Wood -= player.MaxWood;
+        player.Rocks -= player.MaxRocks;
+        player.Plants -= player.MaxPlants;
+        player.state = Player.State.Active;
+        Zone zoneToBuildOn = currentZone;
+        bool building= true;
+        int timeToBuild = 5;
+        // energy cost per hour
+        int energyCostPerHour = 150;
+        // current hour
+        int currentHour = hour;
+        // current minutes
+        int currentMin = minutes;
+        // goal hour
+        int goal = currentHour + timeToBuild;
+        if (goal >= 24)
         {
-            hourTimesTen -= 24;
+            goal -= 24;
         }
 
-        return hourTimesTen;
+        // fast forward time
+        hourScale = fastHourScale / 2;
+
+        while (building)
+        {
+            if (hour == goal)
+            {
+                if (minutes == currentMin)
+                {
+                    building = false;
+                }
+            }
+
+            yield return null;
+        }
+
+        // set time to normal
+        hourScale = baseHourScale;
+        // reduce player energy
+        player.state = Player.State.Rest;
+        player.ReduceEnergy(energyCostPerHour * timeToBuild);
+        Instantiate(campPrefab, zoneToBuildOn.ZonePosition, Quaternion.identity);
+        zoneToBuildOn.Shelter = true;
     }
+    #endregion
 
     public void InstantiatePlayer(Zone _zone)
     {
         GameObject playerGo = Instantiate(playerPrefab, _zone.ZonePosition, Quaternion.identity);
         player = FindObjectOfType<Player>();
         player.currentPosition = _zone.ZonePosition;
-        int futureHour = HourTimesTen();
 
         currentZone = _zone;
         currentZone.Occupied = true;
@@ -637,7 +720,6 @@ public class GameManager : MonoBehaviour
         selectedZone.Selected = true;
 
         levelLoaded = true;
-        player.GetFatigueTimer(10);
     }
 
     void MouseClick()
@@ -664,21 +746,21 @@ public class GameManager : MonoBehaviour
 
     void CheckButtons()
     {
-        // EXPLORE
-        exploreButton.interactable = selectedZone.Occupied && !selectedZone.Explored && player.state == Player.State.Rest;
+        // GATHER
+        gatherButton.interactable = selectedZone.Occupied && player.state == Player.State.Rest && state != State.Camp;
 
-        if (exploreButton.interactable)
+        if (gatherButton.interactable)
         {
-            exploreButton.GetComponentInChildren<Text>().text = "Cost to Explore: " + (selectedZone.ZoneEnergy / 2 * 3) + "eph\n"
+            gatherButton.GetComponentInChildren<Text>().text = "Cost to Gather: " + (selectedZone.ZoneEnergy / 2 * 3) + "eph\n"
                 + "Total Hours: 3 Hours";
         }
         else
         {
-            exploreButton.GetComponentInChildren<Text>().text = "Explore";
+            gatherButton.GetComponentInChildren<Text>().text = "Gather Supplies";
         }
 
         // WALK
-        walkButton.interactable = IsZoneInWalkingDistance() && player.state == Player.State.Rest && currentZone != selectedZone;
+        walkButton.interactable = IsZoneInWalkingDistance() && player.state == Player.State.Rest && currentZone != selectedZone && state != State.Camp;
 
         if (walkButton.interactable)
         {
@@ -693,14 +775,84 @@ public class GameManager : MonoBehaviour
         // SLEEP
         sleepButton.interactable = player.state == Player.State.Rest;
 
-        if (walkButton.interactable)
+        if (sleepButton.interactable)
         {
-            walkButton.GetComponentInChildren<Text>().text = "Cost to Sleep: 45eph\n"
+            sleepButton.GetComponentInChildren<Text>().text = "Cost to Sleep: 45eph\n"
                 + "Total Hours: 8 Hour";
         }
         else
         {
-            walkButton.GetComponentInChildren<Text>().text = "Sleep";
+            sleepButton.GetComponentInChildren<Text>().text = "Sleep";
+        }
+
+        // Collect Water
+        waterButton.interactable = player.state == Player.State.Rest && currentZone.Water && player.GallonWater < 1 && state != State.Camp;
+
+        if (waterButton.interactable)
+        {
+            waterButton.GetComponentInChildren<Text>().text = "Collect Water";
+        }
+        else
+        {
+            waterButton.GetComponentInChildren<Text>().text = "Find Water";
+        }
+
+        // Drink Water
+        drinkButton.interactable = player.state == Player.State.Rest && player.GallonWater > 0;
+
+        if (drinkButton.interactable)
+        {
+            drinkButton.GetComponentInChildren<Text>().text = "Drink Water";
+        }
+        else
+        {
+            drinkButton.GetComponentInChildren<Text>().text = "No Water";
+        }
+
+        // Fish
+        fishButton.interactable = player.state == Player.State.Rest && currentZone.Water && state != State.Camp;
+
+        if (fishButton.interactable)
+        {
+            fishButton.GetComponentInChildren<Text>().text = "Fish";
+        }
+        else
+        {
+            fishButton.GetComponentInChildren<Text>().text = "Can't Fish";
+        }
+
+        // Hunt
+        huntButton.interactable = player.state == Player.State.Rest && currentZone.Fauna && state != State.Camp;
+
+        if (huntButton.interactable)
+        {
+            huntButton.GetComponentInChildren<Text>().text = "Hunt";
+        }
+        else
+        {
+            huntButton.GetComponentInChildren<Text>().text = "Can't Hunt";
+        }
+
+        // Build Camp
+        if (!currentZone.Shelter && player.state == Player.State.Rest && player.CanBuildBasicShelter() && state != State.Camp)
+        {
+            buildCampButton.gameObject.SetActive(true);
+            buildCampButton.GetComponentInChildren<Text>().text = "Build Camp";
+        }
+        else
+        {
+            buildCampButton.gameObject.SetActive(false);
+        }
+
+        // Enter Camp
+        if(currentZone.Shelter && player.state == Player.State.Rest && state != State.Camp)
+        {
+            enterCampButton.gameObject.SetActive(true);
+            enterCampButton.GetComponentInChildren<Text>().text = "Enter Camp";
+        }
+        else
+        {
+            enterCampButton.gameObject.SetActive(false);
         }
     }
 
@@ -711,11 +863,26 @@ public class GameManager : MonoBehaviour
         {
             if (selectedZone.ZonePosition == neighbor.ZonePosition)
             {
-                Debug.Log("Checking: " + neighbor.ZonePosition);
                 zoneInRange = true;
             }
         }
 
         return zoneInRange;
     }
+
+    void UpdateItems()
+    {
+        if (gameStarted)
+        {
+            playerMeatText.text = "Meat " + player.Meat.ToString() + "/" + player.MaxMeat.ToString();
+            playerPlantText.text = "Plants " + player.Plants.ToString() + "/" + player.MaxPlants.ToString();
+            playerMedText.text = "Meds " + player.Medicinal.ToString() + "/" + player.MaxMedicinal.ToString();
+            playerClothText.text = "Cloth " + player.Cloth.ToString() + "/" + player.MaxCloth.ToString();
+            playerWoodText.text = "Wood " + player.Wood.ToString() + "/" + player.MaxWood.ToString();
+            playerRockText.text = "Rock " + player.Rocks.ToString() + "/" + player.MaxRocks.ToString();
+            playerWaterText.text = "Water " + player.GallonWater.ToString() + " gal.";
+        }
+    }
+
+
 }
