@@ -18,6 +18,7 @@ public class MapManager : MonoBehaviour
     public int maxXPointRange;
     public int minYPointRange;
     public int maxYPointRange;
+    public int numberOfRelics;
 
     private float width;
     private float height;
@@ -26,6 +27,8 @@ public class MapManager : MonoBehaviour
     private List<Vector2> gridPos = new List<Vector2>();
     private List<Zone> startingPos = new List<Zone>();
     private List<Vector2> points = new List<Vector2>();
+    private List<Zone> land = new List<Zone>();
+    public List<Zone> relicPoints = new List<Zone>();
 
     GameManager gm;
 
@@ -116,6 +119,7 @@ public class MapManager : MonoBehaviour
             float perlin = Mathf.PerlinNoise(z.Value.x / scale + xOffset, z.Value.y / scale + yOffset);
             z.Key.CalculatePerlinValue(perlin);
             z.Key.ActivateSprite();
+            z.Key.SetStartItems();
             if (z.Key.RoundedPerlin > .09f && z.Key.RoundedPerlin < .15f)
             {
                 startingPos.Add(z.Key);
@@ -125,5 +129,34 @@ public class MapManager : MonoBehaviour
         int startingIndex = Random.Range(0, startingPos.Count);
         gm.InstantiatePlayer(startingPos[startingIndex]);
         startingPos[startingIndex].StartingPosition = true;
+        startingPos[startingIndex].SetStartItems();
+
+        GetLand();
+        
+    }
+
+    void GetLand()
+    {
+        foreach(KeyValuePair<Zone, Vector2> z in zones)
+        {
+            if(z.Key.terrainType == Zone.TerrainType.Forrest || z.Key.terrainType == Zone.TerrainType.Clearing)
+            {
+                land.Add(z.Key);
+            }
+        }
+
+        SetRelicPoint();
+    }
+
+    private void SetRelicPoint()
+    {
+        for(int i = 0; i < numberOfRelics; i++)
+        {
+            int randomIndex = Random.Range(0, land.Count);
+            relicPoints.Add(land[randomIndex]);
+            land[randomIndex].SetRelicZone();
+            //Instantiate(startingPoint, land[randomIndex].ZonePosition, Quaternion.identity);
+            land.RemoveAt(randomIndex);
+        }
     }
 }

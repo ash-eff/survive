@@ -12,7 +12,7 @@ public class Zone : MonoBehaviour
     public enum TerrainSubType { Shallow, Deep, OverGrown, Clear, Standard, Bare, }
     public TerrainSubType terrainSubType;
 
-    public enum ZoneFeature { None, Bog, Lake, Stream, Wreckage, }
+    public enum ZoneFeature { None, Bog, Lake, Stream, Wreckage, Trash }
     public ZoneFeature zoneFeature;
 
     public enum Status { Explored, Unexplored, }
@@ -22,12 +22,21 @@ public class Zone : MonoBehaviour
 
     public GameObject outline1;
     public GameObject outline2;
+    public GameObject yellow;
+    public GameObject relic;
+    public Color A;
+    public Color B;
+    public float speed = 1.0f;
+
+    public int numberOfRelics;
 
     private SpriteRenderer spr;
 
     private Vector2 zonePosition; // the position of the zone 
     private Vector2 closestPoint; // current closest point 
+    public Zone parentRelicZone;
     private Vector2[] directions = new[] { Vector2.up, Vector2.right, Vector2.down, Vector2.left };
+    private List<Zone> relicArea = new List<Zone>();
 
     private float gradientValue; // the higher this number is, the further from the closest point the zone is
     private float roundedPerlin; // final perlin value, rounded to two decimals;
@@ -36,8 +45,8 @@ public class Zone : MonoBehaviour
     private float distanceToClosestPoint = 0;
 
     public int zoneTemperature;
-    private int baseEnergy = 100;
-    public int zoneEnergy;
+    private int baseEnergy = 50;
+    private int zoneEnergy;
     private int increasedMultiplier = 2;
     private float decreasedMultiplier = .5f;
 
@@ -49,6 +58,10 @@ public class Zone : MonoBehaviour
     private bool occupied;
     private bool explored;
     private bool replenished;
+    private bool isRelicZone;
+    public bool inRelicZone;
+    private bool hasTheRelic;
+    private bool relicsSet;
 
     GameManager gm;
     MapManager map;
@@ -68,19 +81,19 @@ public class Zone : MonoBehaviour
     #region item numbers
     private int plants;
     private int basePlants = 15;
-    private int startPlants;
+    public int startPlants;
     private int medicinal;
     private int baseMedicinal = 2;
-    private int startMedicinal;
+    public int startMedicinal;
     private int cloth;
     private int baseCloth = 1;
-    private int startCloth;
+    public int startCloth;
     private int wood;
     private int basewood = 5;
-    private int startWood;
-    public int rocks;
+    public int startWood;
+    private int rocks;
     private int baseRocks = 10;
-    private int startRocks;
+    public int startRocks;
     #endregion
 
     #region getters and setters
@@ -97,11 +110,15 @@ public class Zone : MonoBehaviour
 
     public bool StartingPosition
     {
-        set { startingPosition = value; zoneFeature = ZoneFeature.Wreckage;
+        set
+        {
+            startingPosition = value; 
+            zoneFeature = ZoneFeature.Wreckage;
             lumber = true;
             fabric = true;
-            wood += basewood;
-            cloth += baseCloth;
+            wood = basewood;
+            cloth = baseCloth;
+            Debug.Log("Starting Position Cloth Count: " + cloth.ToString());
         }
     }
 
@@ -184,6 +201,12 @@ public class Zone : MonoBehaviour
         get { return fauna; }
     }
 
+    public bool HasTheRelic
+    {
+        get { return hasTheRelic; }
+        set { hasTheRelic = false; }
+    }
+
     #endregion
 
     private void OnEnable()
@@ -212,10 +235,29 @@ public class Zone : MonoBehaviour
             status = Status.Explored;
         }
 
+        if (gm.player.Boat)
+        {
+            if(terrainType == TerrainType.Water)
+            {
+                zoneEnergy = 50;
+            }
+        }
+
+        if(isRelicZone && gm.GameStarted && !relicsSet)
+        {
+            relicsSet = true;
+            PlaceRelic();
+        }
+
+        if (inRelicZone)
+        {
+            yellow.GetComponent<SpriteRenderer>().color = Color.Lerp(A, B, Mathf.PingPong(Time.time * speed, 1.0f));
+        }
+
         outline1.SetActive(neighbor);
         outline2.SetActive(selected);
 
-        //ReplenishZone();
+        ReplenishZone();
     }
 
     public void CalculateClosestPoint(Vector2 _point)
@@ -416,6 +458,12 @@ public class Zone : MonoBehaviour
                 wood += basewood;
                 cloth += baseCloth;
             }
+            else if (featChance < 0.1)
+            {
+                zoneFeature = ZoneFeature.Trash;
+                fabric = true;
+                cloth += baseCloth * 2;
+            }
         }
 
         // clearing
@@ -477,7 +525,7 @@ public class Zone : MonoBehaviour
         SetStartItems();
     }
 
-    private void SetStartItems()
+    public void SetStartItems()
     {
         startPlants = plants;
         startCloth = cloth;
@@ -571,6 +619,7 @@ public class Zone : MonoBehaviour
 
     void ReplenishZone()
     {
+
         // this needs to only replenish once when it does replenish
         int currentDay = gm.Day;
         if(currentDay % numOfDayUntilReplenish == 0 && !replenished)
@@ -602,5 +651,51 @@ public class Zone : MonoBehaviour
             }
             replenished = false;
         }
+    }
+
+    public void SetRelicZone()
+    {
+        isRelicZone = true;
+        parentRelicZone = this;
+        relicArea.Add(this);
+        inRelicZone = true;
+        yellow.SetActive(true);
+        Collider2D[] hit = Physics2D.OverlapCircleAll(transform.position, 5f, zoneLayer);
+        foreach(Collider2D c in hit)
+        {
+            Zone _zone = c.GetComponent<Zone>();
+
+            if (!_zone.isRelicZone && _zone.terrainType != Zone.TerrainType.Water)
+            {
+                relicArea.Add(_zone);
+                _zone.SetInRelicZone(this);
+            }
+        }
+    }
+
+    public void SetInRelicZone(Zone _parent)
+    {
+        parentRelicZone = _parent;
+        inRelicZone = true;
+        yellow.SetActive(true);
+    }
+
+    public void RelicFound()
+    {
+        foreach(Zone z in relicArea)
+        {
+            if(z.parentRelicZone == this)
+            {
+                z.yellow.SetActive(false);
+            }
+        }
+    }
+
+    public void PlaceRelic()
+    {      
+        int randIndex = Random.Range(0, relicArea.Count);
+        relicArea[randIndex].hasTheRelic = true;
+        //relicArea[randIndex].relic.SetActive(true);
+        relicArea[randIndex].numberOfRelics++;
     }
 }

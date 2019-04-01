@@ -4,7 +4,6 @@
 [Bb]uild/
 [Bb]uilds/
 [Ll]ogs/
-[Ww]ebBuild/
 
 # Never ignore Asset meta data
 ![Aa]ssets/**/*.meta
