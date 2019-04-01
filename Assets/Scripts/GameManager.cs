@@ -45,6 +45,7 @@ public class GameManager : MonoBehaviour
     private bool dayTime;
     public bool gameOver;
     private bool callGo = true;
+    private bool paused;
 
     private float chanceOfRain;
     private float currentLerpTime;
@@ -205,6 +206,20 @@ public class GameManager : MonoBehaviour
             GameOver(false);
         }
 
+        if (Input.GetKeyDown(KeyCode.P) && !gameOver && gameStarted)
+        {
+            paused = !paused;
+        }
+
+        if (paused)
+        {
+            Time.timeScale = 0;
+        }
+        else
+        {
+            Time.timeScale = 1;
+        }
+
         CheckThirst();
         CheckFatigue();
     }
@@ -222,8 +237,7 @@ public class GameManager : MonoBehaviour
                 hour++;
                 player.thirstTimer++;                
                 minutes = 00;
-                int energyLoss = player.totalEnergyLoss;
-                player.ReduceEnergy(energyLoss);
+                player.ReduceEnergy(player.totalEnergyLoss);
                 if (hourScale == fastHourScale)
                 {
                     LogFeedback("...");
@@ -789,9 +803,9 @@ public class GameManager : MonoBehaviour
 
     IEnumerator BuildBasicCamp()
     {
-        player.Wood -= player.MaxWood;
-        player.Rocks -= player.MaxRocks;
-        player.Plants -= player.MaxPlants;
+        player.Wood -= 12;
+        player.Rocks -= 8;
+        player.Plants -= 25;
         player.state = Player.State.Active;
         Zone zoneToBuildOn = currentZone;
         bool building= true;
@@ -884,6 +898,7 @@ public class GameManager : MonoBehaviour
         // reduce player energy
         player.state = Player.State.Rest;
         player.ReduceEnergy(energyCostPerHour * timeToBuild);
+        player.Spear = true;
     }
 
     IEnumerator BuildFishingPole()
@@ -932,13 +947,14 @@ public class GameManager : MonoBehaviour
         // reduce player energy
         player.state = Player.State.Rest;
         player.ReduceEnergy(energyCostPerHour * timeToBuild);
+        player.FishingPole = true;
     }
 
     IEnumerator BuildBoat()
     {
-        player.Wood -= player.MaxWood;
-        player.Cloth -= player.MaxCloth;
-        player.Plants -= player.MaxPlants;
+        player.Wood -= 12;
+        player.Cloth -= 5;
+        player.Plants -= 25;
         player.state = Player.State.Active;
         bool building = true;
         int timeToBuild = 6;
@@ -1025,7 +1041,7 @@ public class GameManager : MonoBehaviour
             }
 
             float successfulHunt = Random.value;
-            if(successfulHunt > 0.8)
+            if(successfulHunt > 0.6)
             {
                 float breakTool = Random.value;
                 if(player.Meat < 0)
@@ -1096,7 +1112,7 @@ public class GameManager : MonoBehaviour
             }
 
             float successfulHunt = Random.value;
-            if (successfulHunt > 0.8)
+            if (successfulHunt > 0.6)
             {
                 float breakTool = Random.value;
                 if (player.Meat < 0)
@@ -1106,7 +1122,7 @@ public class GameManager : MonoBehaviour
                     player.Meat += 1;
                 }
 
-                if (breakTool > .7)
+                if (breakTool > .8)
                 {
                     player.FishingPole = false;
                     LogFeedback("You Broke Your Fishing Pole.");
@@ -1229,11 +1245,11 @@ public class GameManager : MonoBehaviour
     void CheckButtons()
     {
         // GATHER
-        gatherButton.interactable = selectedZone.Occupied && player.state == Player.State.Rest && state != State.Camp;
+        gatherButton.interactable = selectedZone.Occupied && player.state == Player.State.Rest && state != State.Camp && !paused;
 
         if (gatherButton.interactable)
         {
-            gatherButton.GetComponentInChildren<Text>().text = "Cost to Gather: " + (selectedZone.ZoneEnergy / 2 * 3) + "eph\n"
+            gatherButton.GetComponentInChildren<Text>().text = "Cost to Gather: " + (selectedZone.ZoneEnergy / 4) + "eph\n"
                 + "Total Hours: 3 Hours";
         }
         else
@@ -1242,7 +1258,7 @@ public class GameManager : MonoBehaviour
         }
 
         // WALK
-        walkButton.interactable = IsZoneInWalkingDistance() && player.state == Player.State.Rest && currentZone != selectedZone && state != State.Camp;
+        walkButton.interactable = IsZoneInWalkingDistance() && player.state == Player.State.Rest && currentZone != selectedZone && state != State.Camp && !paused;
 
         if (walkButton.interactable)
         {
@@ -1255,12 +1271,11 @@ public class GameManager : MonoBehaviour
         }
 
         // SLEEP
-        sleepButton.interactable = player.state == Player.State.Rest;
+        sleepButton.interactable = player.state == Player.State.Rest && !paused;
 
         if (sleepButton.interactable)
         {
-            sleepButton.GetComponentInChildren<Text>().text = "Cost to Sleep: 45eph\n"
-                + "Total Hours: 8 Hours";
+            sleepButton.GetComponentInChildren<Text>().text = "Sleep For 8 Hours";
         }
         else
         {
@@ -1268,7 +1283,7 @@ public class GameManager : MonoBehaviour
         }
 
         // COLLECT WATER
-        waterButton.interactable = player.state == Player.State.Rest && currentZone.Water && player.GallonWater < 1 && state != State.Camp;
+        waterButton.interactable = player.state == Player.State.Rest && currentZone.Water && player.GallonWater < 1 && state != State.Camp && !paused;
 
         if (waterButton.interactable)
         {
@@ -1280,7 +1295,7 @@ public class GameManager : MonoBehaviour
         }
 
         // DRINK WATER
-        drinkButton.interactable = player.state == Player.State.Rest && player.GallonWater > 0;
+        drinkButton.interactable = player.state == Player.State.Rest && player.GallonWater > 0 && !paused;
 
         if (drinkButton.interactable)
         {
@@ -1292,7 +1307,7 @@ public class GameManager : MonoBehaviour
         }
 
         // EAT FOOD
-        eatButton.interactable = player.state == Player.State.Rest && player.Meat > 0;
+        eatButton.interactable = player.state == Player.State.Rest && player.Meat > 0 && !paused;
 
         if (eatButton.interactable)
         {
@@ -1304,7 +1319,7 @@ public class GameManager : MonoBehaviour
         }
 
         // MEDICINE
-        medButton.interactable = player.state == Player.State.Rest && player.Medicinal > 0;
+        medButton.interactable = player.state == Player.State.Rest && player.Medicinal > 0 && !paused;
 
         if (medButton.interactable)
         {
@@ -1316,11 +1331,11 @@ public class GameManager : MonoBehaviour
         }
 
         // FISH
-        fishButton.interactable = player.state == Player.State.Rest && currentZone.Water && state != State.Camp && player.FishingPole;
+        fishButton.interactable = player.state == Player.State.Rest && currentZone.Water && state == State.Island && player.FishingPole && !paused;
 
         if (fishButton.interactable)
         {
-            fishButton.GetComponentInChildren<Text>().text = "Cost to Fish: " + ("50eph\n"
+            fishButton.GetComponentInChildren<Text>().text = "Cost to Fish: " + ("20eph\n"
                 + "Total Hours: 4 Hours");
         }
         else
@@ -1329,11 +1344,11 @@ public class GameManager : MonoBehaviour
         }
 
         //HUNT
-        huntButton.interactable = player.state == Player.State.Rest && currentZone.Fauna && state != State.Camp && player.Spear;
+        huntButton.interactable = player.state == Player.State.Rest && currentZone.Fauna && state == State.Island && player.Spear && !paused;
 
         if (huntButton.interactable)
         {
-            huntButton.GetComponentInChildren<Text>().text = "Cost to Hunt: " + ("50eph\n"
+            huntButton.GetComponentInChildren<Text>().text = "Cost to Hunt: " + ("20eph\n"
                 + "Total Hours: 4 Hours");
         }
         else
@@ -1342,10 +1357,10 @@ public class GameManager : MonoBehaviour
         }
 
         // BUILD CAMP
-        buildCampButton.interactable = !currentZone.Shelter && player.state == Player.State.Rest && player.CanBuildShelter() && state != State.Camp;
+        buildCampButton.interactable = !currentZone.Shelter && player.state == Player.State.Rest && player.CanBuildShelter() && state != State.Camp && !paused;
         if (buildCampButton.interactable)
         {
-            buildCampButton.GetComponentInChildren<Text>().text = "Cost To Build Camp: 150eph\n Total Hours: 5 Hours";
+            buildCampButton.GetComponentInChildren<Text>().text = "Cost To Build Camp: 50eph\n Total Hours: 5 Hours";
         }
         else
         {
@@ -1353,7 +1368,7 @@ public class GameManager : MonoBehaviour
         }
 
         // ENTER CAMP
-        enterCampButton.interactable = currentZone.Shelter && player.state == Player.State.Rest && state != State.Camp;
+        enterCampButton.interactable = currentZone.Shelter && player.state == Player.State.Rest && state != State.Camp && !paused;
         if (enterCampButton.interactable)
         {
             enterCampButton.GetComponentInChildren<Text>().text = "Enter Camp";
@@ -1364,10 +1379,10 @@ public class GameManager : MonoBehaviour
         }
 
         // BUILD SPEAR
-        buildSpearButton.interactable = player.state == Player.State.Rest && state == State.Camp && player.CanBuildSpear() && !player.Spear;
+        buildSpearButton.interactable = player.state == Player.State.Rest && player.CanBuildSpear() && !player.Spear && !paused;
         if (buildSpearButton.interactable)
         {
-            buildSpearButton.GetComponentInChildren<Text>().text = "Cost to Build: " + ("50eph\n"
+            buildSpearButton.GetComponentInChildren<Text>().text = "Cost to Build: " + ("20eph\n"
                 + "Total Hours: 1 Hours");
         }
         else
@@ -1376,10 +1391,10 @@ public class GameManager : MonoBehaviour
         }
 
         // BUILD FISHINGPOLE
-        buildFishingPoleButton.interactable = player.state == Player.State.Rest && state == State.Camp && player.CanBuildFishingPole() && !player.FishingPole;
+        buildFishingPoleButton.interactable = player.state == Player.State.Rest && player.CanBuildFishingPole() && !player.FishingPole && !paused;
         if (buildFishingPoleButton.interactable)
         {
-            buildFishingPoleButton.GetComponentInChildren<Text>().text = "Cost to Build: " + ("50eph\n"
+            buildFishingPoleButton.GetComponentInChildren<Text>().text = "Cost to Build: " + ("20eph\n"
                 + "Total Hours: 1 Hours");
         }
         else
@@ -1388,10 +1403,10 @@ public class GameManager : MonoBehaviour
         }
 
         // BUILD BOAT
-        buildBoatButton.interactable = player.state == Player.State.Rest && state == State.Camp && player.CanBuildBoat() && !player.Boat;
+        buildBoatButton.interactable = player.state == Player.State.Rest && state == State.Camp && player.CanBuildBoat() && !player.Boat && !paused;
         if (buildBoatButton.interactable)
         {
-            buildBoatButton.GetComponentInChildren<Text>().text = "Cost to Build: " + ("150eph\n"
+            buildBoatButton.GetComponentInChildren<Text>().text = "Cost to Build: " + ("50eph\n"
                 + "Total Hours: 6 Hours");
         }
         else
@@ -1400,10 +1415,10 @@ public class GameManager : MonoBehaviour
         }
 
         // EXCAVATE
-        excavateButton.interactable = player.state == Player.State.Rest && state == State.Island && selectedZone == currentZone && currentZone.inRelicZone;
+        excavateButton.interactable = player.state == Player.State.Rest && state == State.Island && selectedZone == currentZone && currentZone.inRelicZone && !paused;
         if (excavateButton.interactable)
         {
-            excavateButton.GetComponentInChildren<Text>().text = "Cost to Excavate: " + ("100eph\n"
+            excavateButton.GetComponentInChildren<Text>().text = "Cost to Excavate: " + (selectedZone.ZoneEnergy / 4) + ("eph\n"
                 + "Total Hours: 5 Hours");
         }
         else

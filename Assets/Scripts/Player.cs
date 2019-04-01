@@ -14,7 +14,7 @@ public class Player : MonoBehaviour
     public int timeToFatigue;
     public int gametime;
 
-    public int energy = 3000;
+    public int energy = 4000;
     public int baseEnergy = 22;
     public int fatigueVal = 0;
     public int fatigueBaseVal = 15;
@@ -36,15 +36,15 @@ public class Player : MonoBehaviour
     private int meat = 2;
     private int maxMeat = 2;
     private int plants;
-    private int maxPlants = 25;
+    private int maxPlants = 40;
     private int medicinal;
     private int maxMedicinal = 2;
     private int cloth;
     private int maxCloth = 5;
     private int wood;
-    private int maxWood = 12;
+    private int maxWood = 15;
     private int rocks;
-    private int maxRocks = 8;
+    private int maxRocks = 10;
     private float gallonWater;
     private float maxWater = 1;
     public int relics;
@@ -237,7 +237,11 @@ public class Player : MonoBehaviour
 
     public void ReduceEnergy(int val) 
     {
-        energy -= val;
+        if(state != State.Sleep)
+        {
+            energy -= val;
+        }
+
         //gm.LogFeedback("You Lost " + val + " Energy.");
     }
 
@@ -360,7 +364,7 @@ public class Player : MonoBehaviour
 
     public bool CanBuildShelter()
     {
-        if(wood == maxWood && rocks == maxRocks && plants == maxPlants)
+        if(wood >= 12 && rocks >= 8 && plants >= 25)
         {
             return true;
         }
@@ -372,7 +376,7 @@ public class Player : MonoBehaviour
 
     public bool CanBuildSpear()
     {
-        if (wood == 2 && rocks == 1 && plants == 10)
+        if (wood >= 2 && rocks >= 1 && plants >= 10)
         {
             return true;
         }
@@ -384,7 +388,7 @@ public class Player : MonoBehaviour
 
     public bool CanBuildFishingPole()
     {
-        if (wood == 2 && cloth == 1 && plants == 10)
+        if (wood >= 2 && cloth >= 1 && plants >= 10)
         {
             return true;
         }
@@ -396,7 +400,7 @@ public class Player : MonoBehaviour
 
     public bool CanBuildBoat()
     {
-        if (wood == maxWood && cloth == maxCloth && plants == maxPlants)
+        if (wood >= 12 && cloth >= 5 && plants >= 25)
         {
             return true;
         }
@@ -435,7 +439,7 @@ public class Player : MonoBehaviour
             if (cookedFood)
             {
                 gm.LogFeedback("You Eat Food.");
-                IncreaseEnergy(300);
+                IncreaseEnergy(600);
             }
             else
             {

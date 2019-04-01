@@ -125,8 +125,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   state: 0
   currentPosition: {x: 0, y: 0}
-  energy: 3000
-  baseEnergy: 45
+  timeAwake: 0
+  timeToFatigue: 0
+  gametime: 0
+  energy: 4000
+  baseEnergy: 22
+  fatigueVal: 0
+  fatigueBaseVal: 15
+  sickVal: 0
+  sickBaseVal: 20
+  totalEnergyLoss: 0
+  fatigueTimer: 0
+  thirstTimer: 0
+  relics: 0
 --- !u!212 &1156260509982894511
 SpriteRenderer:
   m_ObjectHideFlags: 0
